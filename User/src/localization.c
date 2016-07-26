@@ -19,16 +19,16 @@ double range_bias[MAX_ANCHOR_LIST_SIZE] = {0.2,0.27,0.4,0.6};
 Coordinates coordinates[MAX_ANCHOR_LIST_SIZE]={
 
 		// ISMB -> Local {X,Y,Z} coordinates
-//		{23.71,6.33,2.3},    //Anchor0
-//		{12.41,4.55,2.3},   //Anchor1
-//		{17.97,8.85,1.4},    //Anchor2
-//		{16.75,0,2.3}     //Anchor3
+		{23.71,6.33,2.3},    //Anchor0
+		{12.41,4.55,2.3},   //Anchor1
+		{17.97,8.85,1.4},    //Anchor2
+		{16.75,0,2.3}     //Anchor3
 
 //		// ISMB -> NED coordinates
-		{-10.2168,22.3126,-2.3},    //Anchor0
-		{-4.3939,12.4661,-2.3},   //Anchor1
-		{-4.6187,19.4913,-1.4},    //Anchor2
-		{-10.6658,12.9153,-2.3}     //Anchor3
+//		{-10.2168,22.3126,-2.3},    //Anchor0
+//		{-4.3939,12.4661,-2.3},   //Anchor1
+//		{-4.6187,19.4913,-1.4},    //Anchor2
+//		{-10.6658,12.9153,-2.3}     //Anchor3
 };
 
 //void InitializeEKF(Matrix* Xparam,Matrix* Pparam,Matrix* Fparam,Matrix* Qparam,Matrix* Iparam)
@@ -337,87 +337,87 @@ void convert_ins_data(long *input,double *output)
 
 void initSystem(PVA_EKF *PVASys,LocData *info)
 {
-	// TODO : Initialization of old EKF implementations
-
-	osEvent evt;
-
-	Ranging_data *uwb;
-	Matrix auxB,auxF;
-
-	uint8 i, run=1,Ninit=1;
-
-	Coordinates LLScoord; //For LLS output, Coordinates Estimation
-	double PvectorPVA[3] = {0.3*0.3,0.1*0.1,ERROR_ACC*ERROR_ACC};
-	double QvectorPVA[3] = {0.25*pow(TIME_INS,4)*pow(ERROR_ACC,2),pow(TIME_INS,2)*pow(ERROR_ACC,2),pow(ERROR_ACC,2)};
-
-	//Initialization PVA
-	zeros(NUM_COORD*3,1,&PVASys->X);
-//	CreateNewMatrix(NUM_COORD*3,1,&PVASys->Xhat);
-//	CreateNewMatrix(NUM_COORD*3,NUM_COORD*3,&PVASys->Phat);
-	eye(NUM_COORD*3,1,&PVASys->I);
-
-	CreateNewMatrix(NUM_COORD*3,NUM_COORD*3,&PVASys->P);
-	CreateNewMatrix(NUM_COORD*3,NUM_COORD*3,&PVASys->Q);
-	diagMatrix(&PVASys->P,PvectorPVA);
-	diagMatrix(&PVASys->Q,QvectorPVA);
-
-	zeros(NUM_COORD*3,NUM_COORD,&PVASys->B);
-	eye(NUM_COORD,0.5*TIME_INS*TIME_INS,&auxB);
-	CopyBinA(0,0,&PVASys->B,&auxB);
-	FreeMatrix(&auxB);
-	eye(NUM_COORD,TIME_INS,&auxB);
-	CopyBinA(NUM_COORD,0,&PVASys->B,&auxB);
-	FreeMatrix(&auxB);
-
-	eye(NUM_COORD*3,1,&PVASys->F);
-	eye(NUM_COORD,TIME_INS,&auxF);
-	CopyBinA(0,NUM_COORD,&PVASys->F,&auxF);
-	FreeMatrix(&auxF);
-
-	while(run)
-	{
-	  	osThreadYield();
-	  	// Receive UWB data
-	  	evt = osMessageGet(MsgUwb,1);
-	  	if(evt.status == osEventMessage)
-		{
-			 uwb = evt.value.p;
-
-			 for(i=0;i<MAX_ANCHOR_LIST_SIZE;i++)
-			 {
-				 if (uwb->Range[i] != 0)
-				 {
-					 info->Range[info->Nummeasurements] = uwb->Range[i] - range_bias[info->Nummeasurements];
-					 info->AnchorPos[info->Nummeasurements] = i;
-					 info->Nummeasurements++; // Count the number of measurements
-				  }
-			 }
-
-			 if(info->Nummeasurements > NUM_COORD && info->Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
-			 {
-				  LLScoord= LLS(info); // Save the position estimated
-				  if(LLScoord.z > 0)
-					  LLScoord.z = -1.7; // Medium heigh of a person
-				  PVASys->X.matrix[0][0] = LLScoord.x;
-				  PVASys->X.matrix[1][0] = LLScoord.y;
-				  PVASys->X.matrix[2][0] = LLScoord.z;
-				  run = 0; // Initialization has been finished
-			 }
-			 else // Check Number of tries
-			 {
-				 Ninit++;
-				 if(Ninit==LIMIT_INIT_TRIES)
-				 {
-					 // Coordinates for center of the room
-					 PVASys->X.matrix[0][0] = -7.9545;
-					 PVASys->X.matrix[1][0] = 16.7495;
-					 PVASys->X.matrix[2][0] = -1.7;
-					 run = 0; // Initialization has been finished
-				}
-			}
-			info->Nummeasurements=0;
-		}
-	}
+//	// TODO : Initialization of old EKF implementations
+//
+//	osEvent evt;
+//
+//	Ranging_data *uwb;
+//	//Matrix auxB,auxF;
+//	arm_matrix_instance_f32 auxB, auxF;
+//	uint8 i, run=1,Ninit=1;
+//
+//	Coordinates LLScoord; //For LLS output, Coordinates Estimation
+//	double PvectorPVA[3] = {0.3*0.3,0.1*0.1,ERROR_ACC*ERROR_ACC};
+//	double QvectorPVA[3] = {0.25*pow(TIME_INS,4)*pow(ERROR_ACC,2),pow(TIME_INS,2)*pow(ERROR_ACC,2),pow(ERROR_ACC,2)};
+//
+//	//Initialization PVA
+//	zeros(NUM_COORD*3,1,&PVASys->X);
+////	CreateNewMatrix(NUM_COORD*3,1,&PVASys->Xhat);
+////	CreateNewMatrix(NUM_COORD*3,NUM_COORD*3,&PVASys->Phat);
+//	eye(NUM_COORD*3,1,&PVASys->I);
+//
+//	CreateNewMatrix(NUM_COORD*3,NUM_COORD*3,&PVASys->P);
+//	CreateNewMatrix(NUM_COORD*3,NUM_COORD*3,&PVASys->Q);
+//	diagMatrix(&PVASys->P,PvectorPVA);
+//	diagMatrix(&PVASys->Q,QvectorPVA);
+//
+//	zeros(NUM_COORD*3,NUM_COORD,&PVASys->B);
+//	eye(NUM_COORD,0.5*TIME_INS*TIME_INS,&auxB);
+//	CopyBinA(0,0,&PVASys->B,&auxB);
+//	FreeMatrix(&auxB);
+//	eye(NUM_COORD,TIME_INS,&auxB);
+//	CopyBinA(NUM_COORD,0,&PVASys->B,&auxB);
+//	FreeMatrix(&auxB);
+//
+//	eye(NUM_COORD*3,1,&PVASys->F);
+//	eye(NUM_COORD,TIME_INS,&auxF);
+//	CopyBinA(0,NUM_COORD,&PVASys->F,&auxF);
+//	FreeMatrix(&auxF);
+//
+//	while(run)
+//	{
+//	  	osThreadYield();
+//	  	// Receive UWB data
+//	  	evt = osMessageGet(MsgUwb,1);
+//	  	if(evt.status == osEventMessage)
+//		{
+//			 uwb = evt.value.p;
+//
+//			 for(i=0;i<MAX_ANCHOR_LIST_SIZE;i++)
+//			 {
+//				 if (uwb->Range[i] != 0)
+//				 {
+//					 info->Range[info->Nummeasurements] = uwb->Range[i] - range_bias[info->Nummeasurements];
+//					 info->AnchorPos[info->Nummeasurements] = i;
+//					 info->Nummeasurements++; // Count the number of measurements
+//				  }
+//			 }
+//
+//			 if(info->Nummeasurements > NUM_COORD && info->Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
+//			 {
+//				  LLScoord= LLS(info); // Save the position estimated
+//				  if(LLScoord.z > 0)
+//					  LLScoord.z = -1.7; // Medium heigh of a person
+//				  PVASys->X.matrix[0][0] = LLScoord.x;
+//				  PVASys->X.matrix[1][0] = LLScoord.y;
+//				  PVASys->X.matrix[2][0] = LLScoord.z;
+//				  run = 0; // Initialization has been finished
+//			 }
+//			 else // Check Number of tries
+//			 {
+//				 Ninit++;
+//				 if(Ninit==LIMIT_INIT_TRIES)
+//				 {
+//					 // Coordinates for center of the room
+//					 PVASys->X.matrix[0][0] = -7.9545;
+//					 PVASys->X.matrix[1][0] = 16.7495;
+//					 PVASys->X.matrix[2][0] = -1.7;
+//					 run = 0; // Initialization has been finished
+//				}
+//			}
+//			info->Nummeasurements=0;
+//		}
+//	}
 }
 
 //void CorrectAttitude(AHRS *AttitudeSys)
@@ -578,123 +578,92 @@ void initSystem(PVA_EKF *PVASys,LocData *info)
 
 void Locthread(void const *argument)
 {
-
-  size_t t;
-  uint8 d[100];
-
   osEvent  evt;
   Ins_data *inertial;
   Ranging_data *uwb;
 //  uint8 i,ins_data_ready = CLEAR_NEW_DATA, uwb_data_ready = CLEAR_NEW_DATA, Nacc=0,Ncmps=0;
-  uint8 i,ins_data_ready = CLEAR_NEW_DATA, uwb_data_ready = CLEAR_NEW_DATA;
+  uint8 i, uwb_data_ready = CLEAR_NEW_DATA;
   Euler EulerAngles;
   LocData info;
 //  Coordinates Position;
   PVA_EKF PVASys;
-  Matrix ins_meas,DCMbn;
+  //Matrix ins_meas,DCMbn;
+
+  arm_matrix_instance_f32 ins_meas, DCMbn;
 
   info.Coordinates=coordinates;
   info.Range = (double*)pvPortMalloc(MAX_ANCHOR_LIST_SIZE*sizeof(double));
   info.AnchorPos = (uint8*)pvPortMalloc(MAX_ANCHOR_LIST_SIZE*sizeof(uint8));
   info.Nummeasurements = 0;
+  zeros(2,3, &ins_meas);
 
-  zeros(2,3,&ins_meas);
   initSystem(&PVASys,&info); // Initialize all Structures
-  CreateNewMatrix(3,3,&DCMbn);
-
-  while(1)
-  {
-	  osThreadYield();
-	  // Receive Inertial Data
-	  evt = osMessageGet(MsgIns, 1);
-	  if(evt.status == osEventMessage)
-	  {
-		 inertial = evt.value.p;
-
-		 if(inertial->acceleration[0]==NEW_DATA) // It is going to accumulate all data before all data (acc,gyro,cmpss) is ready
-		 {
-			for(i=0;i<3;i++)
-				ins_meas.matrix[0][i] = inertial->acceleration[i+1] * GRAVITY - PVASys.X.matrix[i + NUM_COORD*2][0];
-//				ins_meas.matrix[0][i] += inertial->acceleration[i+1] * GRAVITY;
-//			Nacc++;
-		 }
-		 if(inertial->compass[0]==NEW_DATA) // It is going to accumulate all data before all data (acc,gyro,cmpss) is ready
-		 {
-			for(i=0;i<3;i++)
-				ins_meas.matrix[1][i] = inertial->compass[i+1];
-//				ins_meas.matrix[1][i] += inertial->compass[i+1];
-//			Ncmps++;
-		 }
-		 if(inertial->acceleration[0]==NEW_DATA && inertial->compass[0]==NEW_DATA) // When Magnetometer is ready takes the mean value of measurements
-		 {
-			inertial->acceleration[0]=CLEAR_NEW_DATA;
-			inertial->compass[0]=CLEAR_NEW_DATA;
-//			for(i=0;i<3;i++) // Performs Mean values a correct bias
-//			{
-//				ins_meas.matrix[0][i] = ins_meas.matrix[0][i]/Nacc - PVASys.X.matrix[i + NUM_COORD*2][0]; // acc bias correction
-//				ins_meas.matrix[1][i] = ins_meas.matrix[1][i]/Ncmps;
-//			}
-//			Nacc = 0;
-//			Ncmps = 0;
-//			ins_data_ready = NEW_DATA;
-		 }
-	  }
-	  // Receive UWB data
-	  evt = osMessageGet(MsgUwb,1);
-	  if(evt.status == osEventMessage)
-	  {
-		  uwb = evt.value.p;
-
-		  for(i=0;i<MAX_ANCHOR_LIST_SIZE;i++)
-		  {
-			  if (uwb->Range[i] != 0)
-			  {
-				  info.Range[info.Nummeasurements] = uwb->Range[i] - range_bias[info.Nummeasurements]; // Correct bias
-				  info.AnchorPos[info.Nummeasurements] = i;
-				  info.Nummeasurements++; // Count the number of measurements
-			  }
-		  }
-//		  uwb_data_ready = NEW_DATA;
-
-		  if(info.Nummeasurements > NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
-		  {
-			  // TODO: Ergonomics application
-
-			  // Euler Angles Estimation
-			  EulerAngles = Euler_Stim(&ins_meas);
-			  // DCMbn Estimation
-			  euler2dcm(&EulerAngles,&DCMbn);
-			  //Position Estimation
-			  EKF_PVA(&PVASys,&info,&ins_meas,&DCMbn);
-			  printMatrix(&PVASys.X);
-		  }
-		  else // Send the predicted data
-		  {
-			  // TODO: When it is not possible to Update
-		  }
-		  info.Nummeasurements=0;
-		  uwb_data_ready = CLEAR_NEW_DATA;
-	  }
-//	  if(ins_data_ready) // Perform ergonomics application and Prediction of hybrid algorithm
+//  CreateNewMatrix(3,3,&DCMbn);
+//
+//  while(1)
+//  {
+//	  osThreadYield();
+//	  // Receive Inertial Data
+//	  evt = osMessageGet(MsgIns, 1);
+//	  if(evt.status == osEventMessage)
 //	  {
-//		  // TODO: Ergonomics application
-//		  // Makes update of the EKF PVA and generates a predicted position
-//		  EulerAngles = Euler_Stim(&ins_meas);
-//		  euler2dcm(&EulerAngles,&DCMbn);
-//		  EKF_PVA_PREDICT(&PVASys,&info,&ins_meas,&DCMbn);
-//		  ConstantOp(&ins_meas,0,PROD); // Reset ins_Meas
-//		  ins_data_ready = CLEAR_NEW_DATA;
+//		 inertial = evt.value.p;
+//
+//		 if(inertial->acceleration[0]==NEW_DATA) // It is going to accumulate all data before all data (acc,gyro,cmpss) is ready
+//		 {
+//			for(i=0;i<3;i++)
+//				ins_meas.matrix[0][i] = inertial->acceleration[i+1] * GRAVITY - PVASys.X.matrix[i + NUM_COORD*2][0];
+////				ins_meas.matrix[0][i] += inertial->acceleration[i+1] * GRAVITY;
+////			Nacc++;
+//		 }
+//		 if(inertial->compass[0]==NEW_DATA) // It is going to accumulate all data before all data (acc,gyro,cmpss) is ready
+//		 {
+//			for(i=0;i<3;i++)
+//				ins_meas.matrix[1][i] = inertial->compass[i+1];
+////				ins_meas.matrix[1][i] += inertial->compass[i+1];
+////			Ncmps++;
+//		 }
+//		 if(inertial->acceleration[0]==NEW_DATA && inertial->compass[0]==NEW_DATA) // When Magnetometer is ready takes the mean value of measurements
+//		 {
+//			inertial->acceleration[0]=CLEAR_NEW_DATA;
+//			inertial->compass[0]=CLEAR_NEW_DATA;
+////			for(i=0;i<3;i++) // Performs Mean values a correct bias
+////			{
+////				ins_meas.matrix[0][i] = ins_meas.matrix[0][i]/Nacc - PVASys.X.matrix[i + NUM_COORD*2][0]; // acc bias correction
+////				ins_meas.matrix[1][i] = ins_meas.matrix[1][i]/Ncmps;
+////			}
+////			Nacc = 0;
+////			Ncmps = 0;
+////			ins_data_ready = NEW_DATA;
+//		 }
 //	  }
-//	  if(uwb_data_ready) // Perfom Localization
+//	  // Receive UWB data
+//	  evt = osMessageGet(MsgUwb,1);
+//	  if(evt.status == osEventMessage)
 //	  {
+//		  uwb = evt.value.p;
+//
+//		  for(i=0;i<MAX_ANCHOR_LIST_SIZE;i++)
+//		  {
+//			  if (uwb->Range[i] != 0)
+//			  {
+//				  info.Range[info.Nummeasurements] = uwb->Range[i] - range_bias[info.Nummeasurements]; // Correct bias
+//				  info.AnchorPos[info.Nummeasurements] = i;
+//				  info.Nummeasurements++; // Count the number of measurements
+//			  }
+//		  }
+////		  uwb_data_ready = NEW_DATA;
 //
 //		  if(info.Nummeasurements > NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
 //		  {
 //			  // TODO: Ergonomics application
-//			  // Makes update of the EKF PVA and generates a predicted position
-//			  EKF_PVA_UPDATE(&PVASys,&info);
-//			  ConstantOp(&PVASys.Xhat,0,PROD);
-//			  ConstantOp(&PVASys.Phat,0,PROD);
+//
+//			  // Euler Angles Estimation
+//			  EulerAngles = Euler_Stim(&ins_meas);
+//			  // DCMbn Estimation
+//			  euler2dcm(&EulerAngles,&DCMbn);
+//			  //Position Estimation
+//			  EKF_PVA(&PVASys,&info,&ins_meas,&DCMbn);
 //			  printMatrix(&PVASys.X);
 //		  }
 //		  else // Send the predicted data
@@ -704,12 +673,41 @@ void Locthread(void const *argument)
 //		  info.Nummeasurements=0;
 //		  uwb_data_ready = CLEAR_NEW_DATA;
 //	  }
-//	  t =xPortGetFreeHeapSize();
-//	  sprintf((char*)&d[0], "Available bytes: %d",(int)t);
-//	  uartWriteLineNoOS((char *) d); //send some data
-  }
-
-  osThreadTerminate(NULL);
+////	  if(ins_data_ready) // Perform ergonomics application and Prediction of hybrid algorithm
+////	  {
+////		  // TODO: Ergonomics application
+////		  // Makes update of the EKF PVA and generates a predicted position
+////		  EulerAngles = Euler_Stim(&ins_meas);
+////		  euler2dcm(&EulerAngles,&DCMbn);
+////		  EKF_PVA_PREDICT(&PVASys,&info,&ins_meas,&DCMbn);
+////		  ConstantOp(&ins_meas,0,PROD); // Reset ins_Meas
+////		  ins_data_ready = CLEAR_NEW_DATA;
+////	  }
+////	  if(uwb_data_ready) // Perfom Localization
+////	  {
+////
+////		  if(info.Nummeasurements > NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
+////		  {
+////			  // TODO: Ergonomics application
+////			  // Makes update of the EKF PVA and generates a predicted position
+////			  EKF_PVA_UPDATE(&PVASys,&info);
+////			  ConstantOp(&PVASys.Xhat,0,PROD);
+////			  ConstantOp(&PVASys.Phat,0,PROD);
+////			  printMatrix(&PVASys.X);
+////		  }
+////		  else // Send the predicted data
+////		  {
+////			  // TODO: When it is not possible to Update
+////		  }
+////		  info.Nummeasurements=0;
+////		  uwb_data_ready = CLEAR_NEW_DATA;
+////	  }
+////	  t =xPortGetFreeHeapSize();
+////	  sprintf((char*)&d[0], "Available bytes: %d",(int)t);
+////	  uartWriteLineNoOS((char *) d); //send some data
+//  }
+//
+//  osThreadTerminate(NULL);
 }
 
 
@@ -729,6 +727,26 @@ void CreateNewMatrix(uint8 n,uint8 m, Matrix* matrix)
 		matrix->matrix[i] = (double*)pvPortMalloc(m*sizeof(double));
 	}
 }
+
+void initArray(Array *a, size_t initialSize) {
+  a->array = (float32_t *)pvPortMalloc(initialSize * sizeof(float32_t ));
+  a->used = 0;
+  a->size = initialSize;
+}
+
+void insertArray(Array *a, float32_t element) {
+  if (a->used < a->size) {
+	  a->array[a->used++] = element;
+  }
+
+}
+
+void freeArray(Array *a) {
+	vPortFree(a->array);
+	a->array = NULL;
+	a->used = a->size = 0;
+}
+
 
 void FreeMatrix(Matrix* m)
 {
@@ -1076,19 +1094,19 @@ void CopyBinA(uint8 i, uint8 j,Matrix*A,Matrix*B)
 	}
 }
 
-void zeros(uint8 n, uint8 m,Matrix* a)
+void zeros(uint32_t n, uint32_t m, arm_matrix_instance_f32 * a)
 {
-	uint8 i,j;
+	uint16_t i;
+	Array vec;
+	initArray(&vec, n*m);
 
-	CreateNewMatrix(n,m,a);
-
-	for(i=0;i<n;i++)
+	for(i=0;i<n*m;i++)
 	{
-		for(j=0;j<m;j++)
-		{
-			a->matrix[i][j] = 0;
-		}
+		insertArray(&vec,0);
+
 	}
+	  arm_mat_init_f32(a, m, n, vec.array);
+	  freeArray(&vec);
 }
 
 void CreateR_EKF(Matrix* Rparam,uint8 NumMeas,double Std_dist)
@@ -1718,7 +1736,7 @@ Euler dcm2euler(Matrix *dcm)
 //	CopyBinA(0,0,&AttitudeSys->DCMbn,&operation); // DCM updated in &AttitudeSys->DCMbn // Operation contains the Copy of Updated attitude
 //
 //	// Compute Euler angles from updated Orientation
-//	AttitudeSys->euler=dcm2euler(&AttitudeSys->DCMbn); // Euler Angles from attitude Padè approximation
+//	AttitudeSys->euler=dcm2euler(&AttitudeSys->DCMbn); // Euler Angles from attitude Padï¿½ approximation
 //
 //	// Compute the residual from acceleration
 //	CreateNewMatrix(3,1,&accbtranspose);
@@ -1967,116 +1985,116 @@ Euler dcm2euler(Matrix *dcm)
 
 void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,Matrix *ins_meas,Matrix *DCMbn)
 {
-	Matrix auxF,product,result,transpose,inverse;
-	Matrix Xhat,Phat,accb,accn,Xnew,Pnew,h,Y,H,S,R,K;
-	uint8 i,j;
-
-	// Predict phase
-	//accn estimation
-	CreateNewMatrix(NUM_COORD,1,&accb);
-	accb.matrix[0][0] = ins_meas->matrix[0][0];
-	accb.matrix[1][0] = ins_meas->matrix[0][1];
-	accb.matrix[2][0] = ins_meas->matrix[0][2];
-	MathMatrix(DCMbn,&accb,&accn,PROD);
-	FreeMatrix(&accb);
-
-	// F estimation
-	eye(NUM_COORD,-0.5*TIME_INS*TIME_INS,&auxF);
-	MathMatrix(&auxF,DCMbn,&product,PROD);
-	FreeMatrix(&auxF);
-	CopyBinA(0,2*NUM_COORD,&PVASys->F,&product);
-	FreeMatrix(&product);
-	eye(NUM_COORD,-TIME_INS,&auxF);
-	MathMatrix(&auxF,DCMbn,&product,PROD);
-	FreeMatrix(&auxF);
-	CopyBinA(NUM_COORD,2*NUM_COORD,&PVASys->F,&product);  // Updated F
-	FreeMatrix(&product);
-
-	// Xhat estimation
-	MathMatrix(&PVASys->F,&PVASys->X,&product,PROD);
-	MathMatrix(&PVASys->B,&accn,&result,PROD);
-	FreeMatrix(&accn);
-	MathMatrix(&product,&result,&Xhat,SUM); // Xhat estimation
-	FreeMatrix(&product);
-	FreeMatrix(&result);
-
-	// Phat estimation
-	TransposeMatrix(&PVASys->F,&transpose);
-	MathMatrix(&PVASys->F,&PVASys->P,&product,PROD);
-	MathMatrix(&product,&transpose,&result,PROD);
-	FreeMatrix(&transpose);
-	FreeMatrix(&product);
-	MathMatrix(&result,&PVASys->Q,&Phat,SUM); //Phat
-	FreeMatrix(&result);
-
-	// Update phase
-	// h=Distance(Xhatposition,AnchorCoord) //Matrix Loc.Nummeasurementsx1
-	// Y=Loc.Range - h  //Matrix Loc.Nummeasurementsx1
-
-	// R computation
-	CreateR_EKF(&R,Loc->Nummeasurements,STD_DIST);
-	// h Computation
-	GetDistance(Loc,&Xhat,&h); //Matrix Loc.Nummeasurementsx1
-	// Y Computation
-	CalculateY(Loc,&h,&Y);  //Matrix Loc.Nummeasurementsx1
-	// H Computation
-	zeros(Loc->Nummeasurements,NUM_COORD*3,&H);
-	for(i=0;i<(Loc->Nummeasurements);i++)
-	{
-		H.matrix[i][0]=((Xhat.matrix[0][0]) - (Loc->Coordinates[Loc->AnchorPos[i]].x)) / h.matrix[i][0]; //X Coordinates
-		H.matrix[i][1]=((Xhat.matrix[1][0]) - (Loc->Coordinates[Loc->AnchorPos[i]].y)) / h.matrix[i][0]; //Y Coordinates
-		#if(NUM_COORD==3)
-		H.matrix[i][2]=((Xhat.matrix[2][0]) - (Loc->Coordinates[Loc->AnchorPos[i]].z)) / h.matrix[i][0]; //Z coordinates
-		#endif
-	}
-	FreeMatrix(&h);
-
-	// S Computation
-	TransposeMatrix(&H,&transpose); //Matrix 4XLoc->Nummeasurements
-	MathMatrix(&H,&Phat,&product,PROD); //Matrix  Loc->NummeasurementsX4
-	MathMatrix(&product,&transpose,&result,PROD);  //Matrix Loc->Nummeasurements x Loc->Nummeasurements
-	FreeMatrix(&product);
-	MathMatrix(&result,&R,&S,SUM);  //Matrix Loc->Nummeasurements x Loc->Nummeasurements
-	FreeMatrix(&result);
-	FreeMatrix(&R);
-
-	// K Computation
-	MathMatrix(&Phat,&transpose,&product,PROD); //Product P*H'
-	FreeMatrix(&transpose);
-	InverseGauss(&S,&inverse);
-	FreeMatrix(&S);
-	MathMatrix(&product,&inverse,&K,PROD);// K=P*H'*(S^-1);  //Matrix 4XLoc->Nummeasurements
-	FreeMatrix(&product);
-	FreeMatrix(&inverse);
-
-	// X Update Computation
-	MathMatrix(&K,&Y,&result,PROD);//(K*Y)
-	FreeMatrix(&Y);
-	MathMatrix(&Xhat,&result,&Xnew,SUM); // Update State Vector X
-	FreeMatrix(&result);
-	FreeMatrix(&Xhat);
-
-	// P Update Computation
-	MathMatrix(&K,&H,&product,PROD);
-	FreeMatrix(&H);
-	FreeMatrix(&K);
-	MathMatrix(&PVASys->I,&product,&result,SUB);
-	FreeMatrix(&product);
-	MathMatrix(&result,&Phat,&Pnew,PROD); // Update Coovariance Matrix
-	FreeMatrix(&result);
-	FreeMatrix(&Phat);
-
-	for(i=0;i<Pnew.numRows;i++) // Copy the new matrixes in the old ones
-	{
-		PVASys->X.matrix[i][0] = Xnew.matrix[i][0];
-
-		for(j=0;j<Pnew.numColumns;j++)
-		{
-			PVASys->P.matrix[i][j] = Pnew.matrix[i][j];
-		}
-	}
-	FreeMatrix(&Xnew);
-	FreeMatrix(&Pnew);
+//	Matrix auxF,product,result,transpose,inverse;
+//	Matrix Xhat,Phat,accb,accn,Xnew,Pnew,h,Y,H,S,R,K;
+//	uint8 i,j;
+//
+//	// Predict phase
+//	//accn estimation
+//	CreateNewMatrix(NUM_COORD,1,&accb);
+//	accb.matrix[0][0] = ins_meas->matrix[0][0];
+//	accb.matrix[1][0] = ins_meas->matrix[0][1];
+//	accb.matrix[2][0] = ins_meas->matrix[0][2];
+//	MathMatrix(DCMbn,&accb,&accn,PROD);
+//	FreeMatrix(&accb);
+//
+//	// F estimation
+//	eye(NUM_COORD,-0.5*TIME_INS*TIME_INS,&auxF);
+//	MathMatrix(&auxF,DCMbn,&product,PROD);
+//	FreeMatrix(&auxF);
+//	CopyBinA(0,2*NUM_COORD,&PVASys->F,&product);
+//	FreeMatrix(&product);
+//	eye(NUM_COORD,-TIME_INS,&auxF);
+//	MathMatrix(&auxF,DCMbn,&product,PROD);
+//	FreeMatrix(&auxF);
+//	CopyBinA(NUM_COORD,2*NUM_COORD,&PVASys->F,&product);  // Updated F
+//	FreeMatrix(&product);
+//
+//	// Xhat estimation
+//	MathMatrix(&PVASys->F,&PVASys->X,&product,PROD);
+//	MathMatrix(&PVASys->B,&accn,&result,PROD);
+//	FreeMatrix(&accn);
+//	MathMatrix(&product,&result,&Xhat,SUM); // Xhat estimation
+//	FreeMatrix(&product);
+//	FreeMatrix(&result);
+//
+//	// Phat estimation
+//	TransposeMatrix(&PVASys->F,&transpose);
+//	MathMatrix(&PVASys->F,&PVASys->P,&product,PROD);
+//	MathMatrix(&product,&transpose,&result,PROD);
+//	FreeMatrix(&transpose);
+//	FreeMatrix(&product);
+//	MathMatrix(&result,&PVASys->Q,&Phat,SUM); //Phat
+//	FreeMatrix(&result);
+//
+//	// Update phase
+//	// h=Distance(Xhatposition,AnchorCoord) //Matrix Loc.Nummeasurementsx1
+//	// Y=Loc.Range - h  //Matrix Loc.Nummeasurementsx1
+//
+//	// R computation
+//	CreateR_EKF(&R,Loc->Nummeasurements,STD_DIST);
+//	// h Computation
+//	GetDistance(Loc,&Xhat,&h); //Matrix Loc.Nummeasurementsx1
+//	// Y Computation
+//	CalculateY(Loc,&h,&Y);  //Matrix Loc.Nummeasurementsx1
+//	// H Computation
+//	zeros(Loc->Nummeasurements,NUM_COORD*3,&H);
+//	for(i=0;i<(Loc->Nummeasurements);i++)
+//	{
+//		H.matrix[i][0]=((Xhat.matrix[0][0]) - (Loc->Coordinates[Loc->AnchorPos[i]].x)) / h.matrix[i][0]; //X Coordinates
+//		H.matrix[i][1]=((Xhat.matrix[1][0]) - (Loc->Coordinates[Loc->AnchorPos[i]].y)) / h.matrix[i][0]; //Y Coordinates
+//		#if(NUM_COORD==3)
+//		H.matrix[i][2]=((Xhat.matrix[2][0]) - (Loc->Coordinates[Loc->AnchorPos[i]].z)) / h.matrix[i][0]; //Z coordinates
+//		#endif
+//	}
+//	FreeMatrix(&h);
+//
+//	// S Computation
+//	TransposeMatrix(&H,&transpose); //Matrix 4XLoc->Nummeasurements
+//	MathMatrix(&H,&Phat,&product,PROD); //Matrix  Loc->NummeasurementsX4
+//	MathMatrix(&product,&transpose,&result,PROD);  //Matrix Loc->Nummeasurements x Loc->Nummeasurements
+//	FreeMatrix(&product);
+//	MathMatrix(&result,&R,&S,SUM);  //Matrix Loc->Nummeasurements x Loc->Nummeasurements
+//	FreeMatrix(&result);
+//	FreeMatrix(&R);
+//
+//	// K Computation
+//	MathMatrix(&Phat,&transpose,&product,PROD); //Product P*H'
+//	FreeMatrix(&transpose);
+//	InverseGauss(&S,&inverse);
+//	FreeMatrix(&S);
+//	MathMatrix(&product,&inverse,&K,PROD);// K=P*H'*(S^-1);  //Matrix 4XLoc->Nummeasurements
+//	FreeMatrix(&product);
+//	FreeMatrix(&inverse);
+//
+//	// X Update Computation
+//	MathMatrix(&K,&Y,&result,PROD);//(K*Y)
+//	FreeMatrix(&Y);
+//	MathMatrix(&Xhat,&result,&Xnew,SUM); // Update State Vector X
+//	FreeMatrix(&result);
+//	FreeMatrix(&Xhat);
+//
+//	// P Update Computation
+//	MathMatrix(&K,&H,&product,PROD);
+//	FreeMatrix(&H);
+//	FreeMatrix(&K);
+//	MathMatrix(&PVASys->I,&product,&result,SUB);
+//	FreeMatrix(&product);
+//	MathMatrix(&result,&Phat,&Pnew,PROD); // Update Coovariance Matrix
+//	FreeMatrix(&result);
+//	FreeMatrix(&Phat);
+//
+//	for(i=0;i<Pnew.numRows;i++) // Copy the new matrixes in the old ones
+//	{
+//		PVASys->X.matrix[i][0] = Xnew.matrix[i][0];
+//
+//		for(j=0;j<Pnew.numColumns;j++)
+//		{
+//			PVASys->P.matrix[i][j] = Pnew.matrix[i][j];
+//		}
+//	}
+//	FreeMatrix(&Xnew);
+//	FreeMatrix(&Pnew);
 }
 
 //void EKF_PVA_PREDICT(PVA_EKF *PVASys,LocData* Loc,Matrix *ins_meas,Matrix *DCMbn)

@@ -19,6 +19,8 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include "instance.h"
+#include "arm_math.h"
+
 
 /* Defined constants --------------------------------------------------------*/
 
@@ -151,18 +153,42 @@ typedef struct
 //	Euler euler;
 //}AHRS;  // Structure for AHRS
 
+//typedef struct
+//{
+//	Matrix X;
+//	Matrix P;
+////	Matrix Xhat;
+////	Matrix Phat;
+//	Matrix Q;
+//	Matrix I;
+//	Matrix B;
+//	Matrix F;
+//}PVA_EKF;  // Structure for AHRS
+
+
+
+
+
 typedef struct
 {
-	Matrix X;
-	Matrix P;
-//	Matrix Xhat;
-//	Matrix Phat;
-	Matrix Q;
-	Matrix I;
-	Matrix B;
-	Matrix F;
-}PVA_EKF;  // Structure for AHRS
+	arm_matrix_instance_f32 X;
+	arm_matrix_instance_f32 P;
+	arm_matrix_instance_f32 Q;
+	arm_matrix_instance_f32 I;
+	arm_matrix_instance_f32 B;
+	arm_matrix_instance_f32 F;
+}PVA_EKF;
 
+typedef struct {
+  float32_t *array;
+  size_t used;
+  size_t size;
+} Array;
+
+void initArray(Array *a, size_t initialSize);
+void insertArray(Array *a, float32_t element);
+void freeArray(Array *a);
+void zeros(uint32_t n, uint32_t m,arm_matrix_instance_f32* zero);
 
 /* Defined functions ------------------------------------------------------- */
 void convert_ins_data(long *input,double *output);
@@ -176,7 +202,7 @@ void MathMatrix(Matrix* m1,Matrix* m2,Matrix* result,uint8 Operation); // Comput
 void ConstantOp(Matrix* m1,double number,uint8 Operation);
 void TransposeMatrix(Matrix* m, Matrix* transpose); // Transpose a matrix
 void SkewMatrix (double *Vector , double param,Matrix* skewmatrix);
-void zeros(uint8 n, uint8 m,Matrix* zero);
+
 void eye(uint8 number, double param,Matrix* identity);
 void CopyBinA(uint8 i, uint8 j,Matrix*A,Matrix*B);
 void diagMatrix(Matrix* m,double vec[]);

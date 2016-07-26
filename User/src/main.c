@@ -90,8 +90,8 @@ int main(void){
 
 	/* Create the threads and semaphore */
 	// Inertial sensor task
-	osThreadDef(mpuInitTask, MpuInitTask, osPriorityNormal, 0, 128);
-	mpuInitTaskHandle = osThreadCreate(osThread(mpuInitTask), NULL);
+//	osThreadDef(mpuInitTask, MpuInitTask, osPriorityNormal, 0, 128);
+//	mpuInitTaskHandle = osThreadCreate(osThread(mpuInitTask), NULL);
 	// UWB task
 	osThreadDef(uwbInitTask, UwbInitTask, osPriorityNormal, 0, 128);
 	uwbInitTaskHandle = osThreadCreate(osThread(uwbInitTask), NULL);
