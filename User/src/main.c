@@ -90,8 +90,8 @@ int main(void){
 
 	/* Create the threads and semaphore */
 	// Inertial sensor task
-	osThreadDef(mpuInitTask, MpuInitTask, osPriorityNormal, 0, 128);
-	mpuInitTaskHandle = osThreadCreate(osThread(mpuInitTask), NULL);
+//	osThreadDef(mpuInitTask, MpuInitTask, osPriorityNormal, 0, 128);
+//	mpuInitTaskHandle = osThreadCreate(osThread(mpuInitTask), NULL);
 	// UWB task
 	osThreadDef(uwbInitTask, UwbInitTask, osPriorityNormal, 0, 128);
 	uwbInitTaskHandle = osThreadCreate(osThread(uwbInitTask), NULL);
@@ -99,7 +99,7 @@ int main(void){
 	MsgIns = osMessageCreate(osMessageQ(MsgIns), NULL);  // create msg queue
 	MsgUwb = osMessageCreate(osMessageQ(MsgUwb), NULL);  // create msg queue
 
-	osThreadDef(Loc_thread, Locthread, osPriorityNormal, 0, 512);
+	osThreadDef(Loc_thread, Locthread, osPriorityBelowNormal, 0, 512);
 	ThreadLocid = osThreadCreate(osThread(Loc_thread), NULL);
 
 	/* Start scheduler */

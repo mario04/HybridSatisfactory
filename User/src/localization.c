@@ -19,16 +19,16 @@ double range_bias[MAX_ANCHOR_LIST_SIZE] = {0.2,0.27,0.4,0.6};
 Coordinates coordinates[MAX_ANCHOR_LIST_SIZE]={
 
 		// ISMB -> Local {X,Y,Z} coordinates
-//		{23.71,6.33,2.3},    //Anchor0
-//		{12.41,4.55,2.3},   //Anchor1
-//		{17.97,8.85,1.4},    //Anchor2
-//		{16.75,0,2.3}     //Anchor3
+		{23.71,6.33,2.3},    //Anchor0
+		{12.41,4.55,2.3},   //Anchor1
+		{17.97,8.85,1.4},    //Anchor2
+		{16.75,0,2.3}     //Anchor3
 
 //		// ISMB -> NED coordinates
-		{-10.2168,22.3126,-2.3},    //Anchor0
-		{-4.3939,12.4661,-2.3},   //Anchor1
-		{-4.6187,19.4913,-1.4},    //Anchor2
-		{-10.6658,12.9153,-2.3}     //Anchor3
+//		{-10.2168,22.3126,-2.3},    //Anchor0
+//		{-4.3939,12.4661,-2.3},   //Anchor1
+//		{-4.6187,19.4913,-1.4},    //Anchor2
+//		{-10.6658,12.9153,-2.3}     //Anchor3
 };
 
 //void InitializeEKF(Matrix* Xparam,Matrix* Pparam,Matrix* Fparam,Matrix* Qparam,Matrix* Iparam)
@@ -606,39 +606,39 @@ void Locthread(void const *argument)
   {
 	  osThreadYield();
 	  // Receive Inertial Data
-	  evt = osMessageGet(MsgIns, 1);
-	  if(evt.status == osEventMessage)
-	  {
-		 inertial = evt.value.p;
-
-		 if(inertial->acceleration[0]==NEW_DATA) // It is going to accumulate all data before all data (acc,gyro,cmpss) is ready
-		 {
-			for(i=0;i<3;i++)
-				ins_meas.matrix[0][i] = inertial->acceleration[i+1] * GRAVITY - PVASys.X.matrix[i + NUM_COORD*2][0];
-//				ins_meas.matrix[0][i] += inertial->acceleration[i+1] * GRAVITY;
-//			Nacc++;
-		 }
-		 if(inertial->compass[0]==NEW_DATA) // It is going to accumulate all data before all data (acc,gyro,cmpss) is ready
-		 {
-			for(i=0;i<3;i++)
-				ins_meas.matrix[1][i] = inertial->compass[i+1];
-//				ins_meas.matrix[1][i] += inertial->compass[i+1];
-//			Ncmps++;
-		 }
-		 if(inertial->acceleration[0]==NEW_DATA && inertial->compass[0]==NEW_DATA) // When Magnetometer is ready takes the mean value of measurements
-		 {
-			inertial->acceleration[0]=CLEAR_NEW_DATA;
-			inertial->compass[0]=CLEAR_NEW_DATA;
-//			for(i=0;i<3;i++) // Performs Mean values a correct bias
-//			{
-//				ins_meas.matrix[0][i] = ins_meas.matrix[0][i]/Nacc - PVASys.X.matrix[i + NUM_COORD*2][0]; // acc bias correction
-//				ins_meas.matrix[1][i] = ins_meas.matrix[1][i]/Ncmps;
-//			}
-//			Nacc = 0;
-//			Ncmps = 0;
-//			ins_data_ready = NEW_DATA;
-		 }
-	  }
+//	  evt = osMessageGet(MsgIns, 1);
+//	  if(evt.status == osEventMessage)
+//	  {
+//		 inertial = evt.value.p;
+//
+//		 if(inertial->acceleration[0]==NEW_DATA) // It is going to accumulate all data before all data (acc,gyro,cmpss) is ready
+//		 {
+//			for(i=0;i<3;i++)
+//				ins_meas.matrix[0][i] = inertial->acceleration[i+1] * GRAVITY - PVASys.X.matrix[i + NUM_COORD*2][0];
+////				ins_meas.matrix[0][i] += inertial->acceleration[i+1] * GRAVITY;
+////			Nacc++;
+//		 }
+//		 if(inertial->compass[0]==NEW_DATA) // It is going to accumulate all data before all data (acc,gyro,cmpss) is ready
+//		 {
+//			for(i=0;i<3;i++)
+//				ins_meas.matrix[1][i] = inertial->compass[i+1];
+////				ins_meas.matrix[1][i] += inertial->compass[i+1];
+////			Ncmps++;
+//		 }
+//		 if(inertial->acceleration[0]==NEW_DATA && inertial->compass[0]==NEW_DATA) // When Magnetometer is ready takes the mean value of measurements
+//		 {
+//			inertial->acceleration[0]=CLEAR_NEW_DATA;
+//			inertial->compass[0]=CLEAR_NEW_DATA;
+////			for(i=0;i<3;i++) // Performs Mean values a correct bias
+////			{
+////				ins_meas.matrix[0][i] = ins_meas.matrix[0][i]/Nacc - PVASys.X.matrix[i + NUM_COORD*2][0]; // acc bias correction
+////				ins_meas.matrix[1][i] = ins_meas.matrix[1][i]/Ncmps;
+////			}
+////			Nacc = 0;
+////			Ncmps = 0;
+////			ins_data_ready = NEW_DATA;
+//		 }
+//	  }
 	  // Receive UWB data
 	  evt = osMessageGet(MsgUwb,1);
 	  if(evt.status == osEventMessage)
@@ -661,9 +661,9 @@ void Locthread(void const *argument)
 			  // TODO: Ergonomics application
 
 			  // Euler Angles Estimation
-			  EulerAngles = Euler_Stim(&ins_meas);
-			  // DCMbn Estimation
-			  euler2dcm(&EulerAngles,&DCMbn);
+//			  EulerAngles = Euler_Stim(&ins_meas);
+//			  // DCMbn Estimation
+//			  euler2dcm(&EulerAngles,&DCMbn);
 			  //Position Estimation
 			  EKF_PVA(&PVASys,&info,&ins_meas,&DCMbn);
 			  printMatrix(&PVASys.X);
@@ -1718,7 +1718,7 @@ Euler dcm2euler(Matrix *dcm)
 //	CopyBinA(0,0,&AttitudeSys->DCMbn,&operation); // DCM updated in &AttitudeSys->DCMbn // Operation contains the Copy of Updated attitude
 //
 //	// Compute Euler angles from updated Orientation
-//	AttitudeSys->euler=dcm2euler(&AttitudeSys->DCMbn); // Euler Angles from attitude Padè approximation
+//	AttitudeSys->euler=dcm2euler(&AttitudeSys->DCMbn); // Euler Angles from attitude Padï¿½ approximation
 //
 //	// Compute the residual from acceleration
 //	CreateNewMatrix(3,1,&accbtranspose);
