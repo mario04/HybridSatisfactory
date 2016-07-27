@@ -189,6 +189,12 @@ void initArray(Array *a, size_t initialSize);
 void insertArray(Array *a, float32_t element);
 void freeArray(Array *a);
 void zeros(uint32_t n, uint32_t m,arm_matrix_instance_f32* zero);
+void eye(uint32_t number, float32_t  param, arm_matrix_instance_f32 * identity);
+void diagMatrix(arm_matrix_instance_f32* m,float32_t vec[], uint8 number);
+void CopyBinA(uint8 i, uint8 j, arm_matrix_instance_f32* A, arm_matrix_instance_f32* B);
+void printMatrix(arm_matrix_instance_f32 * m);
+void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,arm_matrix_instance_f32 *ins_meas,arm_matrix_instance_f32 *DCMbn);
+void CalculateY(LocData* Loc,arm_matrix_instance_f32* Mat,arm_matrix_instance_f32* result);
 
 /* Defined functions ------------------------------------------------------- */
 void convert_ins_data(long *input,double *output);
@@ -203,16 +209,16 @@ void ConstantOp(Matrix* m1,double number,uint8 Operation);
 void TransposeMatrix(Matrix* m, Matrix* transpose); // Transpose a matrix
 void SkewMatrix (double *Vector , double param,Matrix* skewmatrix);
 
-void eye(uint8 number, double param,Matrix* identity);
-void CopyBinA(uint8 i, uint8 j,Matrix*A,Matrix*B);
-void diagMatrix(Matrix* m,double vec[]);
+
+
+
 void diagop(Matrix* m,double param,uint8 Operation);
-void printMatrix(Matrix* m);
+
 void InverseGauss(Matrix* m,Matrix* inverse);
 Coordinates LLS(LocData* Loc);
 void CreateR_EKF(Matrix* Rparam,uint8 NumMeas,double Std_dis);
-void GetDistance(LocData* Loc,Matrix* Xp, Matrix* result);
-void CalculateY(LocData* Loc,Matrix* Mat,Matrix* result);
+void GetDistance(LocData* Loc,arm_matrix_instance_f32* Xp, arm_matrix_instance_f32* result);
+
 #if(HYBRID==0)
 void EKF(LocData* Loc,Matrix* Xp,Matrix* Pp,Matrix* Fp,Matrix* Qp,Matrix* Ip,Matrix* Rp);
 #else // Functions for the hybrid algorithm
@@ -222,7 +228,7 @@ Euler dcm2euler(Matrix *dcm);
 //Coordinates localxyz2enu(Coordinates* Coor,double Deg);
 //void EKF_AHRS(AHRS *AttitudeSys,Matrix *ins_meas);
 //void EKF_PVA(PVA_EKF *PVASys,AHRS *AttitudeSys,LocData* Loc,Matrix *ins_meas,uint8 update);
-void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,Matrix *ins_meas,Matrix *DCMbn);
+
 //void EKF_PVA_PREDICT(PVA_EKF *PVASys,LocData* Loc,Matrix *ins_meas,Matrix *DCMbn);
 //void EKF_PVA_UPDATE(PVA_EKF *PVASys,LocData* Loc);
 //void CorrectAttitude(AHRS *AttitudeSys);
