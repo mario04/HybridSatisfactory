@@ -99,7 +99,7 @@ int main(void){
 	MsgIns = osMessageCreate(osMessageQ(MsgIns), NULL);  // create msg queue
 	MsgUwb = osMessageCreate(osMessageQ(MsgUwb), NULL);  // create msg queue
 
-	osThreadDef(Loc_thread, Locthread, osPriorityNormal, 0, 512);
+	osThreadDef(Loc_thread, Locthread, osPriorityBelowNormal, 0, 512);
 	ThreadLocid = osThreadCreate(osThread(Loc_thread), NULL);
 
 	/* Start scheduler */

@@ -335,34 +335,38 @@ void convert_ins_data(long *input,double *output)
 //	  FreeMatrix(&ins_meas);
 //}
 
-void initSystem(PVA_EKF *PVASys,LocData *info)
+void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
 {
 	// TODO : Initialization of old EKF implementations
 	osEvent evt;
 	Ranging_data *uwb;
 	arm_matrix_instance_f32 auxB,auxF;
+	Array vecAuxB, vecAuxF;
 	uint8 i, run=1,Ninit=1;
 	Coordinates LLScoord; //For LLS output, Coordinates Estimation
 	float32_t PvectorPVA[3] = {0.3*0.3,0.1*0.1,ERROR_ACC*ERROR_ACC};
 	float32_t QvectorPVA[3] = {0.25*pow(TIME_INS,4)*pow(ERROR_ACC,2),pow(TIME_INS,2)*pow(ERROR_ACC,2),pow(ERROR_ACC,2)};
 
+
 	//Initialization PVA
-	zeros(NUM_COORD*3,1,&PVASys->X);
-	eye(NUM_COORD*3,1,&PVASys->I);
+	zeros(NUM_COORD*3,1,&PVASys->X, &vecPVASys->vecX);
+	eye(NUM_COORD*3,1,&PVASys->I, &vecPVASys->vecI);
 
-	diagMatrix(&PVASys->P,PvectorPVA, NUM_COORD*3);
-	diagMatrix(&PVASys->Q,QvectorPVA, NUM_COORD*3);
+	diagMatrix(&PVASys->P,PvectorPVA, NUM_COORD*3, &vecPVASys->vecP);
+	diagMatrix(&PVASys->Q,QvectorPVA, NUM_COORD*3, &vecPVASys->vecQ);
 
-	zeros(NUM_COORD*3,NUM_COORD,&PVASys->B);
-	eye(NUM_COORD,0.5*TIME_INS*TIME_INS,&auxB);
+	zeros(NUM_COORD*3,NUM_COORD,&PVASys->B, &vecPVASys->vecB);
+	eye(NUM_COORD,0.5*TIME_INS*TIME_INS,&auxB, &vecAuxB);
 
 	CopyBinA(0,0,&PVASys->B,&auxB);
-	eye(NUM_COORD,TIME_INS,&auxB);
+	freeArray(&vecAuxB);
+	eye(NUM_COORD,TIME_INS,&auxB, &vecAuxB);
 	CopyBinA(NUM_COORD,0,&PVASys->B,&auxB);
-
-	eye(NUM_COORD*3,1,&PVASys->F);
-	eye(NUM_COORD,TIME_INS,&auxF);
+	freeArray(&vecAuxB);
+	eye(NUM_COORD*3,1,&PVASys->F, &vecPVASys->vecF);
+	eye(NUM_COORD,TIME_INS,&auxF, &vecAuxF);
 	CopyBinA(0,NUM_COORD,&PVASys->F,&auxF);
+	freeArray(&vecAuxF);
 
 	while(run)
 	{
@@ -410,162 +414,6 @@ void initSystem(PVA_EKF *PVASys,LocData *info)
 	}
 }
 
-//void CorrectAttitude(AHRS *AttitudeSys)
-//{
-//	Matrix num,den,operation,result,inverse,Skewdt;
-//
-//	double errorEuler[3]={AttitudeSys->X.matrix[0][0],AttitudeSys->X.matrix[1][0],AttitudeSys->X.matrix[2][0]};
-//	SkewMatrix (errorEuler,TIME_INS,&Skewdt);
-//
-//	//StrapDownStruct.dcmbn = ((2*eye(dim) + Skew * deltaT)/(2*eye(dim) - Skew * deltaT)) * StrapDownStruct.dcmbn;
-//	MathMatrix(&AttitudeSys->twoI,&Skewdt,&num,SUM);
-//	MathMatrix(&AttitudeSys->twoI,&Skewdt,&den,SUB);
-//
-//	InverseGauss(&den,&inverse);
-//	FreeMatrix(&den);
-//	FreeMatrix(&Skewdt);
-//
-//
-//	MathMatrix(&num,&inverse,&operation,PROD);
-//	FreeMatrix(&num);
-//	FreeMatrix(&inverse);
-//
-//	MathMatrix(&operation,&AttitudeSys->DCMbn,&result,PROD); // Current DCM
-//	FreeMatrix(&operation);
-//
-//	// Update DCM
-//	CopyBinA(0,0,&AttitudeSys->DCMbn,&result);
-//	FreeMatrix(&result);
-//	// Eliminate the error in attitude because it was corrected
-//	AttitudeSys->X.matrix[0][0] = 0; // error in roll
-//	AttitudeSys->X.matrix[1][0] = 0; // error in pitch
-//	AttitudeSys->X.matrix[2][0] = 0; // error in yaw
-//}
-
-//void Locthread(void const *argument)
-//{
-//  osEvent  evt;
-//  Ins_data *inertial;
-//  Ranging_data *uwb;
-//  uint8 i,ins_data_ready = CLEAR_NEW_DATA, uwb_data_ready = CLEAR_NEW_DATA, Nacc=0,Ngyro=0,Ncmps=0;
-//  Euler EulerAngles;
-//  LocData info;
-//  Coordinates Position;
-////  AHRS AttitudeSys;
-//  PVA_EKF PVASys;
-//  Matrix ins_meas;
-//  uint8 d[200];
-//
-//  info.Coordinates=coordinates;
-////  info.Range = (double*)malloc(MAX_ANCHOR_LIST_SIZE*sizeof(double));
-//  info.Range = (double*)pvPortMalloc(MAX_ANCHOR_LIST_SIZE*sizeof(double));
-////  info.AnchorPos = (uint8*)malloc(MAX_ANCHOR_LIST_SIZE*sizeof(uint8));
-//  info.AnchorPos = (uint8*)pvPortMalloc(MAX_ANCHOR_LIST_SIZE*sizeof(uint8));
-//  info.Nummeasurements = 0;
-//
-//  zeros(3,3,&ins_meas);
-////  initSystem(&AttitudeSys,&PVASys,&info); // Initialize all Structures
-//  initSystem(&PVASys,&info); // Initialize all Structures
-//
-//
-//  while(1)
-//  {
-//	  osThreadYield();
-//
-//	  // Receive Inertial Data
-//	  evt = osMessageGet(MsgIns, 1);
-//	  if(evt.status == osEventMessage)
-//	  {
-//		 inertial = evt.value.p;
-//
-//		 if(inertial->acceleration[0]==NEW_DATA) // It is going to accumulate all data before all data (acc,gyro,cmpss) is ready
-//		 {
-//			for(i=0;i<3;i++)
-//				ins_meas.matrix[0][i] += inertial->acceleration[i+1] * GRAVITY;
-//			Nacc++;
-//		 }
-//		 if(inertial->gyroscope[0]==NEW_DATA) // It is going to accumulate all data before all data (acc,gyro,cmpss) is ready
-//		 {
-//			for(i=0;i<3;i++)
-//				ins_meas.matrix[1][i] += inertial->gyroscope[i+1] * DEG2RAD;
-//			Ngyro++;
-//		 }
-//		 if(inertial->compass[0]==NEW_DATA) // It is going to accumulate all data before all data (acc,gyro,cmpss) is ready
-//		 {
-//			for(i=0;i<3;i++)
-//				ins_meas.matrix[2][i] += inertial->compass[i+1];
-//			Ncmps++;
-//		 }
-//		 if(inertial->acceleration[0]==NEW_DATA && inertial->gyroscope[0]==NEW_DATA && inertial->compass[0]==NEW_DATA) // When Magnetometer is ready takes the mean value of measurements
-//		 {
-//			inertial->acceleration[0]=CLEAR_NEW_DATA;
-//			inertial->gyroscope[0]=CLEAR_NEW_DATA;
-//			inertial->compass[0]=CLEAR_NEW_DATA;
-//
-//			for(i=0;i<3;i++) // Performs Mean values a correct bias
-//			{
-//				ins_meas.matrix[0][i] = ins_meas.matrix[0][i]/Nacc - PVASys.X.matrix[i + NUM_COORD*2][0]; // acc bias correction
-//				ins_meas.matrix[1][i] = ins_meas.matrix[1][i]/Ngyro - AttitudeSys.X.matrix[i+NUM_COORD][0]; // gyro bias correction
-//				ins_meas.matrix[2][i] = ins_meas.matrix[2][i]/Ncmps;
-//			}
-//
-//			Nacc = 0;
-//			Ngyro = 0;
-//			Ncmps = 0;
-//
-//			ins_data_ready = NEW_DATA;
-//		 }
-//	  }
-//	  // Receive UWB data
-//	  evt = osMessageGet(MsgUwb,1);
-//	  if(evt.status == osEventMessage)
-//	  {
-//		  uwb = evt.value.p;
-//
-//		  for(i=0;i<MAX_ANCHOR_LIST_SIZE;i++)
-//		  {
-//			  if (uwb->Range[i] != 0)
-//			  {
-//				  info.Range[info.Nummeasurements] = uwb->Range[i] - range_bias[info.Nummeasurements]; // Correct bias
-//				  info.AnchorPos[info.Nummeasurements] = i;
-//				  info.Nummeasurements++; // Count the number of measurements
-//			  }
-//		  }
-//
-//		  uwb_data_ready = NEW_DATA;
-//	  }
-//
-//	  if(ins_data_ready) // Perform ergonomics application and Prediction of hybrid algorithm
-//	  {
-//		  // TODO: Ergonomics application
-//
-//		  // Perform Prediction of hybrid algorithm
-//		  if (VecMagnitud(&ins_meas.matrix[0][0], NUM_COORD) <= MEAN_NO_ACC) // If the user has 0 acceleration, will run the AHRS
-//		  {
-//			  EKF_AHRS(&AttitudeSys,&ins_meas);
-//			  CorrectAttitude(&AttitudeSys);
-//			  // Makes update of the EKF PVA and generates a predicted position
-//			  EKF_PVA(&PVASys,&AttitudeSys,&info,&ins_meas,NOT_UPDATE);
-//		  }
-//		  ConstantOp(&ins_meas,0,PROD); // Reset ins_Meas
-//		  ins_data_ready = CLEAR_NEW_DATA;
-//	  }
-//	  if(uwb_data_ready) // Perfom Localization
-//	  {
-//		  if(info.Nummeasurements > NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
-//		  {
-//
-//		  }
-//
-//		  info.Nummeasurements=0;
-//
-//		  uwb_data_ready = CLEAR_NEW_DATA;
-//	  }
-//  }
-//
-//  osThreadTerminate(NULL);
-//}
-
 void Locthread(void const *argument)
 {
   osEvent  evt;
@@ -576,16 +424,18 @@ void Locthread(void const *argument)
   LocData info;
 //Coordinates Position;
   PVA_EKF PVASys;
-   arm_matrix_instance_f32 ins_meas, DCMbn;
+  vecPVA_EKF vecPVASys;
+  arm_matrix_instance_f32 ins_meas, DCMbn;
+  Array vecIns_meas, vecDCMbn;
 
   info.Coordinates=coordinates;
   info.Range = (double*)pvPortMalloc(MAX_ANCHOR_LIST_SIZE*sizeof(double));
   info.AnchorPos = (uint8*)pvPortMalloc(MAX_ANCHOR_LIST_SIZE*sizeof(uint8));
   info.Nummeasurements = 0;
-  zeros(2,3, &ins_meas);
 
-  initSystem(&PVASys,&info); // Initialize all Structures
-  zeros(3,3,&DCMbn);
+  zeros(2,3, &ins_meas, &vecIns_meas);
+  initSystem(&PVASys,&info, &vecPVASys); // Initialize all Structures
+  zeros(3,3,&DCMbn, &vecDCMbn);
 
   while(1)
   {
@@ -650,7 +500,7 @@ void Locthread(void const *argument)
 //			  // DCMbn Estimation
 //			  euler2dcm(&EulerAngles,&DCMbn);
 //			  //Position Estimation
-			  EKF_PVA(&PVASys,&info,&ins_meas,&DCMbn);
+			  //EKF_PVA(&PVASys,&info,&ins_meas,&DCMbn);
 			  printMatrix(&PVASys.X);
 		  }
 		  else // Send the predicted data
@@ -857,12 +707,11 @@ void ConstantOp(Matrix* m1,double number,uint8 Operation)
 		}
 	}
 }
-void diagMatrix(arm_matrix_instance_f32* m,float32_t vec[], uint8 number)
+void diagMatrix(arm_matrix_instance_f32* m,float32_t vec[], uint8 number, Array *arr)
 {
 	uint8 i,row = 0, col, aux=0, aux2 = 0;
 
-	Array arr;
-	initArray(&arr, number*number);
+	initArray(arr, number*number);
 
 	for(i=0;i<number*number;i++)
 	{
@@ -875,17 +724,17 @@ void diagMatrix(arm_matrix_instance_f32* m,float32_t vec[], uint8 number)
 				aux = 1;
 				aux2++;
 			}
-			insertArray(&arr,vec[aux2]);
+			insertArray(arr,vec[aux2]);
 		}
 		else
-			insertArray(&arr,0);
+			insertArray(arr,0);
 
 		if((i+1)%number == 0)
 			row++;
 	}
 
-	arm_mat_init_f32(m, number, number, arr.array);
-	freeArray(&arr);
+	arm_mat_init_f32(m, number, number, arr->array);
+
 }
 
 void diagop(Matrix* m,double param,uint8 Operation)
@@ -963,25 +812,24 @@ void SkewMatrix (double *Vector , double param,Matrix* skewmatrix)
 	}
 }
 
-void eye(uint32_t number, float32_t  param, arm_matrix_instance_f32 * identity)
+void eye(uint32_t number, float32_t  param, arm_matrix_instance_f32 * identity, Array * vec)
 {
 
 	uint8 i, row = 0, col;
-	Array vec;
-	initArray(&vec, number*number);
+	initArray(vec, number*number);
 	for(i=0;i<number*number;i++)
 	{
 		col = i%number;
 		if(row == col)
-			insertArray(&vec,param);
+			insertArray(vec,param);
 		else
-			insertArray(&vec,0);
+			insertArray(vec,0);
 
 		if((i+1)%number == 0)
 			row++;
 	}
-	arm_mat_init_f32(identity, number, number, vec.array);
-	freeArray(&vec);
+	arm_mat_init_f32(identity, number, number, vec->array);
+
 }
 
 void InverseGauss(Matrix* m,Matrix* b) // Calculate invers matrix
@@ -1083,19 +931,19 @@ void CopyBinA(uint8 i, uint8 j, arm_matrix_instance_f32* A, arm_matrix_instance_
 	}
 }
 
-void zeros(uint32_t n, uint32_t m, arm_matrix_instance_f32 * a)
+void zeros(uint32_t n, uint32_t m, arm_matrix_instance_f32 * a, Array * vec)
 {
 	uint16_t i;
-	Array vec;
-	initArray(&vec, n*m);
+
+	initArray(vec, n*m);
 
 	for(i=0;i<n*m;i++)
 	{
-		insertArray(&vec,0);
+		insertArray(vec,0);
 
 	}
-	  arm_mat_init_f32(a, n, m, vec.array);
-	  freeArray(&vec);
+	  arm_mat_init_f32(a, n, m, vec->array);
+
 }
 
 void CreateR_EKF(Matrix* Rparam,uint8 NumMeas,double Std_dist)
@@ -1201,8 +1049,8 @@ Coordinates LLS(LocData* Loc)
 	Coordinates Coord;
 
 	arm_matrix_instance_f32 A, P, AT, product, inverse, result;
-
 	Array vecA, vecP, vecAT, vecProduct, vecInverse, vecResult;
+
 	initArray(&vecA, ((Loc->Nummeasurements)-1)*NUM_COORD);
 	for(i = 0; i<(Loc->Nummeasurements-1); i++){
 		insertArray(&vecA, (2*((Loc->Coordinates[Loc->AnchorPos[i+1]].x) - (Loc->Coordinates[Loc->AnchorPos[0]].x))));
@@ -1237,7 +1085,8 @@ Coordinates LLS(LocData* Loc)
 	initArray(&vecInverse, ((Loc->Nummeasurements)-1)*NUM_COORD);
 	arm_mat_init_f32(&inverse,((Loc->Nummeasurements)-1),NUM_COORD, vecInverse.array);
 	arm_mat_inverse_f32(&product, &inverse);
-	arm_mat_mult_f32(&AT, &inverse, &product);
+
+	arm_mat_mult_f32(&AT, &inverse, &product); // free vector memory before?
 	freeArray(&vecAT);
 	freeArray(&vecInverse);
 
@@ -1699,283 +1548,6 @@ Euler dcm2euler(Matrix *dcm)
 	return eul_vect;
 }
 
-//void EKF_AHRS(AHRS *AttitudeSys,Matrix *ins_meas)
-//{
-//	// Note: The bias of the inertial measurements is corrected before entering in this function as well as the attitude
-//
-//	Matrix SkewM,num,den,inverse,product,operation,accbtranspose,F,gyrobtranspose,gyron,diagonal;
-//	Matrix Xhat,Phat,Result,Transpose,S,R,K,Z,Y,Xnew,Pnew;
-//	Euler TrueEuler; // Euler angles estimated by acc and magnetometer
-//	double deltaheading, gyronVect[3];
-//	uint8 i,j;
-//
-//	// Updating the DCM (Orientation Matrix)
-//	SkewMatrix(&ins_meas->matrix[1][0],TIME_INS,&SkewM); // Wx*dt
-//
-//	MathMatrix(&AttitudeSys->twoI,&SkewM,&num,SUM); // 2I + Wx*dt
-//	MathMatrix(&AttitudeSys->twoI,&SkewM,&den,SUB); // 2I - Wx*dt
-//	FreeMatrix(&SkewM);
-//
-//	InverseGauss(&den,&inverse);
-//	FreeMatrix(&den);
-//
-//	MathMatrix(&num,&inverse,&product,PROD);  //   2I + Wx*dt / 2I - Wx*dt
-//	FreeMatrix(&num);
-//	FreeMatrix(&inverse);
-//
-//	MathMatrix(&AttitudeSys->DCMbn,&product,&operation,PROD); // DCMt-1  * 2I + Wx*dt / 2I - Wx*dt
-//	FreeMatrix(&product);
-//
-//	CopyBinA(0,0,&AttitudeSys->DCMbn,&operation); // DCM updated in &AttitudeSys->DCMbn // Operation contains the Copy of Updated attitude
-//
-//	// Compute Euler angles from updated Orientation
-//	AttitudeSys->euler=dcm2euler(&AttitudeSys->DCMbn); // Euler Angles from attitude Pad� approximation
-//
-//	// Compute the residual from acceleration
-//	CreateNewMatrix(3,1,&accbtranspose);
-//	accbtranspose.matrix[0][0] = ins_meas->matrix[0][0];
-//	accbtranspose.matrix[1][0] = ins_meas->matrix[0][1];
-//	accbtranspose.matrix[2][0] = ins_meas->matrix[0][2];
-//	MathMatrix(&AttitudeSys->DCMbn,&accbtranspose,&Z,PROD); // Estimates acceleration in navigation frame
-//	FreeMatrix(&accbtranspose);
-//
-//	// Z computation
-//	Z.matrix[0][0] = 0 - Z.matrix[0][0]; // Residual acc in x
-//	Z.matrix[1][0] = 0 - Z.matrix[1][0]; // Residual acc in y
-////	Z.matrix[2][0] = GRAVITY + Z.matrix[2][0];// Residual acc in Z
-//
-//    // Compute the Heading
-//    TrueEuler = Euler_Stim(ins_meas); // euler angles by acc and cmpss
-//    Z.matrix[2][0] = AttitudeSys->euler.yaw - TrueEuler.yaw; // Residual of the heading
-//
-//    // F Computation
-//    zeros(NUM_COORD*2,NUM_COORD*2,&F);
-//
-//	CreateNewMatrix(3,1,&gyrobtranspose);
-//	gyrobtranspose.matrix[0][0] = ins_meas->matrix[1][0];
-//	gyrobtranspose.matrix[1][0] = ins_meas->matrix[1][1];
-//	gyrobtranspose.matrix[2][0] = ins_meas->matrix[1][2];
-//	MathMatrix(&AttitudeSys->DCMbn,&gyrobtranspose,&gyron,PROD); // Estimates gyro in navigation frame
-//	FreeMatrix(&gyrobtranspose);
-//	gyronVect[0]=gyron.matrix[0][0];
-//	gyronVect[1]=gyron.matrix[1][0];
-//	gyronVect[2]=gyron.matrix[2][0];
-//	SkewMatrix(gyronVect,TIME_INS,&SkewM); // Skew matrix of gyro vector in navigation frame
-//	FreeMatrix(&gyron);
-//	CopyBinA(0,0,&F,&SkewM);
-//	FreeMatrix(&SkewM);
-//	ConstantOp(&operation,-TIME_INS,PROD);
-//	CopyBinA(0,3,&F,&operation); // Updated F Matrix
-//	FreeMatrix(&operation);
-//	diagop(&F,1,SUM);
-//
-//	// Predict Phase
-//	//---------Xhat Computation-------------
-//	MathMatrix(&F,&AttitudeSys->X,&Xhat,PROD); // Xhat
-//	//---------Phat Computation-------------
-//	TransposeMatrix(&F,&Transpose);
-//	MathMatrix(&F,&AttitudeSys->P,&product,PROD);
-//	MathMatrix(&product,&Transpose,&Result,PROD);
-//	FreeMatrix(&Transpose);
-//	FreeMatrix(&product);
-//	FreeMatrix(&F);
-//
-//	MathMatrix(&Result,&AttitudeSys->Q,&Phat,SUM); //Phat
-//	FreeMatrix(&Result);
-//
-//	// Update Phase
-//	// ---- Y Computation -----
-//	MathMatrix(&AttitudeSys->H,&Xhat,&product,PROD);
-//	MathMatrix(&Z,&product,&Y,SUB);
-//	FreeMatrix(&product);
-//	FreeMatrix(&Z);
-//	//----- R Computation ---------------
-//	eye(NUM_COORD,ERROR_ACC*ERROR_ACC,&R);
-//	R.matrix[0][0] = R.matrix[0][0] * pow(AttitudeSys->DCMbn.matrix[0][0],2);
-//	R.matrix[1][1] = R.matrix[1][1] * pow(AttitudeSys->DCMbn.matrix[1][1],2);
-//	R.matrix[2][2] = pow(PSI_ERROR,2); // Ajustar como parametro en localization.h
-//	//---------S Computation-------------
-//	TransposeMatrix(&AttitudeSys->H,&Transpose);
-//	MathMatrix(&AttitudeSys->H,&Phat,&product,PROD);
-//	MathMatrix(&product,&Transpose,&Result,PROD);
-//	MathMatrix(&Result,&R,&S,SUM);
-//	FreeMatrix(&product);
-//	FreeMatrix(&Result);
-//	FreeMatrix(&R);
-//	//---------K Computation-------------
-//	MathMatrix(&Phat,&Transpose,&product,PROD); //Product P*H'
-//	FreeMatrix(&Transpose);
-//	InverseGauss(&S,&inverse);
-//	FreeMatrix(&S);
-//	MathMatrix(&product,&inverse,&K,PROD);// K=P*H'*(S^-1);  //Matrix 4XLoc->Nummeasurements
-//	FreeMatrix(&product);
-//	FreeMatrix(&inverse);
-//	//---------X Update Computation-------------
-//	MathMatrix(&K,&Y,&Result,PROD);//(K*Y)
-//	FreeMatrix(&Y);
-//	MathMatrix(&Xhat,&Result,&Xnew,SUM); // Xnew
-//	FreeMatrix(&Result);
-//	FreeMatrix(&Xhat);
-//	//---------P Update Computation-------------
-//	eye(NUM_COORD*2,1,&diagonal);
-//	MathMatrix(&K,&AttitudeSys->H,&product,PROD);
-//	FreeMatrix(&K);
-//	MathMatrix(&diagonal,&product,&Result,SUB);
-//	FreeMatrix(&diagonal);
-//	FreeMatrix(&product);
-//	MathMatrix(&Result,&Phat,&Pnew,PROD); // Update Coovariance Matrix
-//	FreeMatrix(&Result);
-//	FreeMatrix(&Phat);
-//
-//	// Updating State vector and coovariance error state
-//	for(i=0;i<Pnew.numRows;i++) // Copy the new matrixes in the old ones
-//	{
-//		AttitudeSys->X.matrix[i][0] = Xnew.matrix[i][0];
-//
-//		for(j=0;j<Pnew.numColumns;j++)
-//		{
-//			AttitudeSys->P.matrix[i][j] = Pnew.matrix[i][j];
-//		}
-//	}
-//	FreeMatrix(&Xnew);
-//	FreeMatrix(&Pnew);
-//}
-
-//void EKF_PVA(PVA_EKF *PVASys,AHRS *AttitudeSys,LocData* Loc,Matrix *ins_meas,uint8 update)
-//{
-//	Matrix auxF,product,result,Transpose,inverse;
-//	Matrix Xhat,Phat,Xnew,Pnew,accb,accn,h,Y,H,S,R,K;
-//	uint8 i,j;
-//	// Predict phase
-//
-//	//accn estimation
-//	CreateNewMatrix(NUM_COORD,1,&accb);
-//	accb.matrix[0][0] = ins_meas->matrix[0][0];
-//	accb.matrix[1][0] = ins_meas->matrix[0][1];
-//	accb.matrix[2][0] = ins_meas->matrix[0][2];
-//	MathMatrix(&AttitudeSys->DCMbn,&accb,&accn,PROD);
-//	FreeMatrix(&accb);
-//
-//	// F estimation
-//	eye(NUM_COORD,-0.5*TIME_INS*TIME_INS,&auxF);
-//	MathMatrix(&auxF,&AttitudeSys->DCMbn,&product,PROD);
-//	FreeMatrix(&auxF);
-//	CopyBinA(0,2*NUM_COORD,&PVASys->F,&product);
-//	FreeMatrix(&product);
-//	eye(NUM_COORD,-TIME_INS,&auxF);
-//	MathMatrix(&auxF,&AttitudeSys->DCMbn,&product,PROD);
-//	FreeMatrix(&auxF);
-//	CopyBinA(NUM_COORD,2*NUM_COORD,&PVASys->F,&product);  // Updated F
-//	FreeMatrix(&product);
-//
-//	// Xhat estimation
-//	MathMatrix(&PVASys->F,&PVASys->X,&product,PROD);
-//	MathMatrix(&PVASys->B,&accn,&result,PROD);
-//	FreeMatrix(&accn);
-//	MathMatrix(&product,&result,&Xhat,SUM); // Xhat estimation
-//	FreeMatrix(&product);
-//	FreeMatrix(&result);
-//
-//	// Phat estimation
-//	TransposeMatrix(&PVASys->F,&Transpose);
-//	MathMatrix(&PVASys->F,&PVASys->P,&product,PROD);
-////	MathMatrix(&product,&Transpose,&result,PROD);
-//	FreeMatrix(&Transpose);
-//	FreeMatrix(&product);
-////
-////	MathMatrix(&result,&PVASys->Q,&Phat,SUM); //Phat
-////	FreeMatrix(&result);
-//
-////	// Update phase
-////	if(update)
-////	{
-////		// h=Distance(Xhatposition,AnchorCoord) //Matrix Loc.Nummeasurementsx1
-////		// Y=Loc.Range - h  //Matrix Loc.Nummeasurementsx1
-////
-////		// R computation
-////		CreateR_EKF(&R,Loc->Nummeasurements,STD_DIST);
-////		// h Computation
-////		GetDistance(Loc,&Xhat,&h); //Matrix Loc.Nummeasurementsx1
-////		// Y Computation
-////		CalculateY(Loc,&h,&Y);  //Matrix Loc.Nummeasurementsx1
-////		// H Computation
-////		zeros(Loc->Nummeasurements,NUM_COORD*3,&H);
-////		for(i=0;i<(Loc->Nummeasurements);i++)
-////		{
-////			H.matrix[i][0]=((Xhat.matrix[0][0]) - (Loc->Coordinates[Loc->AnchorPos[i]].x)) / h.matrix[i][0]; //X Coordinates
-////			H.matrix[i][1]=((Xhat.matrix[1][0]) - (Loc->Coordinates[Loc->AnchorPos[i]].y)) / h.matrix[i][0]; //Y Coordinates
-////			#if(NUM_COORD==3)
-////			H.matrix[i][2]=((Xhat.matrix[2][0]) - (Loc->Coordinates[Loc->AnchorPos[i]].z)) / h.matrix[i][0]; //Z coordinates
-////			#endif
-////		}
-////		FreeMatrix(&h);
-////
-////		// S Computation
-////		TransposeMatrix(&H,&Transpose); //Matrix 4XLoc->Nummeasurements
-////		MathMatrix(&H,&PVASys->P,&product,PROD); //Matrix  Loc->NummeasurementsX4
-////		MathMatrix(&product,&Transpose,&result,PROD);  //Matrix Loc->Nummeasurements x Loc->Nummeasurements
-////		MathMatrix(&result,&R,&S,SUM);  //Matrix Loc->Nummeasurements x Loc->Nummeasurements
-////		FreeMatrix(&product);
-////		FreeMatrix(&result);
-////		FreeMatrix(&R);
-////
-////		// K Computation
-////		MathMatrix(&PVASys->P,&Transpose,&product,PROD); //Product P*H'
-////		FreeMatrix(&Transpose);
-////		InverseGauss(&S,&inverse);
-////		FreeMatrix(&S);
-////		MathMatrix(&product,&inverse,&K,PROD);// K=P*H'*(S^-1);  //Matrix 4XLoc->Nummeasurements
-////		FreeMatrix(&product);
-////		FreeMatrix(&inverse);
-////
-////		// X Update Computation
-////		MathMatrix(&K,&Y,&result,PROD);//(K*Y)
-////		FreeMatrix(&Y);
-////		MathMatrix(&Xhat,&result,&Xnew,SUM); // Update State Vector X
-////		FreeMatrix(&result);
-////		FreeMatrix(&Xhat);
-////
-////		// P Update Computation
-////		MathMatrix(&K,&H,&product,PROD);
-////		FreeMatrix(&H);
-////		FreeMatrix(&K);
-////		MathMatrix(&PVASys->I,&product,&result,SUB);
-////		FreeMatrix(&product);
-////		MathMatrix(&result,&PVASys->P,&Pnew,PROD); // Update Coovariance Matrix
-////		FreeMatrix(&result);
-////		FreeMatrix(&Phat);
-////
-////		for(i=0;i<Pnew.numRows;i++) // Copy the new matrixes in the old ones
-////		{
-////			PVASys->X.matrix[i][0] = Xnew.matrix[i][0];
-////
-////			for(j=0;j<Pnew.numColumns;j++)
-////			{
-////				PVASys->P.matrix[i][j] = Pnew.matrix[i][j];
-////			}
-////		}
-////
-////		FreeMatrix(&Xnew);
-////		FreeMatrix(&Pnew);
-////	}
-////	else
-////	{
-//		for(i=0;i<Pnew.numRows;i++) // Copy the new matrixes in the old ones
-//		{
-//			PVASys->X.matrix[i][0] = Xhat.matrix[i][0];
-//
-////			for(j=0;j<Pnew.numColumns;j++)
-////			{
-////				PVASys->P.matrix[i][j] = Phat.matrix[i][j];
-////			}
-//		}
-//
-//		FreeMatrix(&Xhat);
-////		FreeMatrix(&Phat);
-////	}
-//
-//}
-
 void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,arm_matrix_instance_f32 *ins_meas,arm_matrix_instance_f32 *DCMbn)
 {
 
@@ -1997,13 +1569,13 @@ void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,arm_matrix_instance_f32 *ins_meas,arm_
 	freeArray(&vecAccb);
 
 	// F estimation
-	eye(NUM_COORD,-0.5*TIME_INS*TIME_INS,&auxF);
+//	eye(NUM_COORD,-0.5*TIME_INS*TIME_INS,&auxF);
 	initArray(&vecProduct, NUM_COORD*NUM_COORD);
 	arm_mat_init_f32(&product, NUM_COORD, NUM_COORD, vecProduct.array);
 	arm_mat_mult_f32(&auxF, DCMbn, &product);
 	CopyBinA(0,2*NUM_COORD,&PVASys->F,&product);
 
-	eye(NUM_COORD,-TIME_INS,&auxF);
+	//eye(NUM_COORD,-TIME_INS,&auxF);
 	arm_mat_mult_f32(&auxF, DCMbn, &product);
 	CopyBinA(NUM_COORD,2*NUM_COORD,&PVASys->F,&product);  // Updated F
 	freeArray(&vecProduct);
@@ -2048,14 +1620,14 @@ void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,arm_matrix_instance_f32 *ins_meas,arm_
 	// Y=Loc.Range - h  //Matrix Loc.Nummeasurementsx1
 
 	// R computation
-	eye(Loc->Nummeasurements, STD_DIST*STD_DIST, &R);
+//	eye(Loc->Nummeasurements, STD_DIST*STD_DIST, &R);
 
 	// h Computation
 	GetDistance(Loc,&Xhat,&h); //Matrix Loc.Nummeasurementsx1
 	// Y Computation
 	CalculateY(Loc,&h,&Y);  //Matrix Loc.Nummeasurementsx1
 	// H Computation
-	zeros(Loc->Nummeasurements,NUM_COORD*3,&H);
+//	zeros(Loc->Nummeasurements,NUM_COORD*3,&H);
 	for(i=0;i<(Loc->Nummeasurements);i++)
 	{
 		k = i*H.numCols;

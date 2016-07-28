@@ -142,33 +142,6 @@ typedef struct
 	double yaw;
 }Euler;  // Structure for Euler angles in Radians
 
-//typedef struct
-//{
-//	Matrix X;
-//	Matrix P;
-//	Matrix Q;
-//	Matrix H;
-//	Matrix DCMbn;
-//	Matrix twoI; // This is a constant matrix 2*identity
-//	Euler euler;
-//}AHRS;  // Structure for AHRS
-
-//typedef struct
-//{
-//	Matrix X;
-//	Matrix P;
-////	Matrix Xhat;
-////	Matrix Phat;
-//	Matrix Q;
-//	Matrix I;
-//	Matrix B;
-//	Matrix F;
-//}PVA_EKF;  // Structure for AHRS
-
-
-
-
-
 typedef struct
 {
 	arm_matrix_instance_f32 X;
@@ -185,12 +158,23 @@ typedef struct {
   size_t size;
 } Array;
 
+typedef struct{
+	Array vecX;
+	Array vecP;
+	Array vecQ;
+	Array vecI;
+	Array vecB;
+	Array vecF;
+}vecPVA_EKF;
+
+
+
 void initArray(Array *a, size_t initialSize);
 void insertArray(Array *a, float32_t element);
 void freeArray(Array *a);
-void zeros(uint32_t n, uint32_t m,arm_matrix_instance_f32* zero);
-void eye(uint32_t number, float32_t  param, arm_matrix_instance_f32 * identity);
-void diagMatrix(arm_matrix_instance_f32* m,float32_t vec[], uint8 number);
+void zeros(uint32_t n, uint32_t m,arm_matrix_instance_f32* zero, Array * vec);
+void eye(uint32_t number, float32_t  param, arm_matrix_instance_f32 * identity, Array * vec);
+void diagMatrix(arm_matrix_instance_f32* m,float32_t vec[], uint8 number, Array * arr);
 void CopyBinA(uint8 i, uint8 j, arm_matrix_instance_f32* A, arm_matrix_instance_f32* B);
 void printMatrix(arm_matrix_instance_f32 * m);
 void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,arm_matrix_instance_f32 *ins_meas,arm_matrix_instance_f32 *DCMbn);
