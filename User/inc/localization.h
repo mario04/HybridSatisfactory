@@ -20,6 +20,7 @@ extern "C" {
 #include <stdlib.h>
 #include "instance.h"
 #include "arm_math.h"
+#include "uart.h"
 
 
 /* Defined constants --------------------------------------------------------*/
@@ -77,7 +78,6 @@ extern osMessageQId  MsgUwb;
 //#define TIME_UWB (1) // time to take UWB measurements -> in seconds
 //#define TIME_LOC (TIME_INS + TIME_UWB) // Localization dt -> in seconds
 
-#define PI (3.14159265358979323846264338327)
 #define EMD (1.85*DEG2RAD)      // Eath Magnetic declination
 #define GRAVITY (9.80665)  // m/s^2
 #define ERROR_ACC (0.008*GRAVITY)
@@ -107,13 +107,6 @@ typedef struct
 
 typedef struct
 {
-    uint8 numColumns;
-    uint8 numRows;
-    double** matrix;
-}Matrix; // Matrix structure used in EKF
-
-typedef struct
-{
     double x;
     double y;
     double z;
@@ -135,12 +128,6 @@ typedef struct
 	uint8 Connectivity;
 }msg2gateway;   // In this structure are save the valures for the gateway msg
 
-typedef struct
-{
-	double roll;
-	double pitch;
-	double yaw;
-}Euler;  // Structure for Euler angles in Radians
 
 typedef struct
 {
@@ -167,8 +154,6 @@ typedef struct{
 	Array vecF;
 }vecPVA_EKF;
 
-
-
 void initArray(Array *a, size_t initialSize);
 void insertArray(Array *a, float32_t element);
 void freeArray(Array *a);
@@ -178,45 +163,12 @@ void diagMatrix(arm_matrix_instance_f32* m,float32_t vec[], uint8 number, Array 
 void CopyBinA(uint8 i, uint8 j, arm_matrix_instance_f32* A, arm_matrix_instance_f32* B);
 void printMatrix(arm_matrix_instance_f32 * m);
 void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,arm_matrix_instance_f32 *ins_meas,arm_matrix_instance_f32 *DCMbn);
-void CalculateY(LocData* Loc,arm_matrix_instance_f32* Mat,arm_matrix_instance_f32* result);
-
+void CalculateY(LocData* Loc,arm_matrix_instance_f32* Mat,arm_matrix_instance_f32* result, Array * vec);
+void GetDistance(LocData* Loc,arm_matrix_instance_f32* Xp, arm_matrix_instance_f32* result, Array * vec);
+Coordinates LLS(LocData* Loc);
 /* Defined functions ------------------------------------------------------- */
 void convert_ins_data(long *input,double *output);
-void send_ins_data(void);
 void Locthread (void const *argument);
-//---------------Matrix Functions -------------------------
-void CreateNewMatrix(uint8 n,uint8 m, Matrix* matrix); // Create a matrix
-void FreeMatrix(Matrix* m); // Free memory and matrix structure
-double VecMagnitud(double *ins_meas, uint8 dimension);
-void MathMatrix(Matrix* m1,Matrix* m2,Matrix* result,uint8 Operation); // Computes a matrix operation
-void ConstantOp(Matrix* m1,double number,uint8 Operation);
-void TransposeMatrix(Matrix* m, Matrix* transpose); // Transpose a matrix
-void SkewMatrix (double *Vector , double param,Matrix* skewmatrix);
-
-
-
-
-void diagop(Matrix* m,double param,uint8 Operation);
-
-void InverseGauss(Matrix* m,Matrix* inverse);
-Coordinates LLS(LocData* Loc);
-void CreateR_EKF(Matrix* Rparam,uint8 NumMeas,double Std_dis);
-void GetDistance(LocData* Loc,arm_matrix_instance_f32* Xp, arm_matrix_instance_f32* result);
-
-#if(HYBRID==0)
-void EKF(LocData* Loc,Matrix* Xp,Matrix* Pp,Matrix* Fp,Matrix* Qp,Matrix* Ip,Matrix* Rp);
-#else // Functions for the hybrid algorithm
-Euler Euler_Stim(Matrix *Iner_Meas);
-void euler2dcm(Euler *angles,Matrix* dcm);
-Euler dcm2euler(Matrix *dcm);
-//Coordinates localxyz2enu(Coordinates* Coor,double Deg);
-//void EKF_AHRS(AHRS *AttitudeSys,Matrix *ins_meas);
-//void EKF_PVA(PVA_EKF *PVASys,AHRS *AttitudeSys,LocData* Loc,Matrix *ins_meas,uint8 update);
-
-//void EKF_PVA_PREDICT(PVA_EKF *PVASys,LocData* Loc,Matrix *ins_meas,Matrix *DCMbn);
-//void EKF_PVA_UPDATE(PVA_EKF *PVASys,LocData* Loc);
-//void CorrectAttitude(AHRS *AttitudeSys);
-#endif
 
 #ifdef __cplusplus
 }
