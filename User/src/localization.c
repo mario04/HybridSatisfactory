@@ -566,7 +566,7 @@ void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,arm_matrix_instance_f32 *ins_meas,arm_
 
 	initArray(&vecResult, Loc->Nummeasurements*Loc->Nummeasurements);
 	arm_mat_init_f32(&result, Loc->Nummeasurements, Loc->Nummeasurements, vecResult.array);
-	arm_mat_cmplx_mult_f32(&product,&transpose,&result);
+	arm_mat_mult_f32(&product,&transpose,&result);
 	freeArray(&vecProduct);
 
 	initArray(&vecS, Loc->Nummeasurements*Loc->Nummeasurements);
