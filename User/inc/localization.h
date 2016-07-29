@@ -164,6 +164,8 @@ void CopyBinA(uint8 i, uint8 j, arm_matrix_instance_f32* A, arm_matrix_instance_
 void printMatrix(arm_matrix_instance_f32 * m);
 void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,arm_matrix_instance_f32 *ins_meas,arm_matrix_instance_f32 *DCMbn);
 void CalculateY(LocData* Loc,arm_matrix_instance_f32* Mat,arm_matrix_instance_f32* result, Array * vec);
+void EKF_PVA2(PVA_EKF *PVASys,LocData* Loc);
+
 void GetDistance(LocData* Loc,arm_matrix_instance_f32* Xp, arm_matrix_instance_f32* result, Array * vec);
 Coordinates LLS(LocData* Loc);
 /* Defined functions ------------------------------------------------------- */

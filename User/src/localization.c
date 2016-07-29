@@ -60,32 +60,46 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
 	// TODO : Initialization of old EKF implementations
 	osEvent evt;
 	Ranging_data *uwb;
-	arm_matrix_instance_f32 auxB,auxF;
-	Array vecAuxB, vecAuxF;
+	arm_matrix_instance_f32 auxF;
+	//arm_matrix_instance_f32 auxB;
+	Array vecAuxF;
+	//Array vecAuxB;
 	uint8 i, run=1,Ninit=1;
 	Coordinates LLScoord; //For LLS output, Coordinates Estimation
 	float32_t PvectorPVA[3] = {0.3*0.3,0.1*0.1,ERROR_ACC*ERROR_ACC};
 	float32_t QvectorPVA[3] = {0.25*pow(TIME_INS,4)*pow(ERROR_ACC,2),pow(TIME_INS,2)*pow(ERROR_ACC,2),pow(ERROR_ACC,2)};
 
 
-	//Initialization PVA
+	//Initialization PV
 	zeros(NUM_COORD*3,1,&PVASys->X, &vecPVASys->vecX);
 	eye(NUM_COORD*3,1,&PVASys->I, &vecPVASys->vecI);
 
 	diagMatrix(&PVASys->P,PvectorPVA, NUM_COORD*3, &vecPVASys->vecP);
 	diagMatrix(&PVASys->Q,QvectorPVA, NUM_COORD*3, &vecPVASys->vecQ);
 
-	zeros(NUM_COORD*3,NUM_COORD,&PVASys->B, &vecPVASys->vecB);
-	eye(NUM_COORD,0.5*TIME_INS*TIME_INS,&auxB, &vecAuxB);
+	//zeros(NUM_COORD*3,NUM_COORD,&PVASys->B, &vecPVASys->vecB);
+	//eye(NUM_COORD,0.5*TIME_INS*TIME_INS,&auxB, &vecAuxB);
 
-	CopyBinA(0,0,&PVASys->B,&auxB);
-	freeArray(&vecAuxB);
-	eye(NUM_COORD,TIME_INS,&auxB, &vecAuxB);
-	CopyBinA(NUM_COORD,0,&PVASys->B,&auxB);
-	freeArray(&vecAuxB);
+//	CopyBinA(0,0,&PVASys->B,&auxB);
+//	freeArray(&vecAuxB);
+//	eye(NUM_COORD,TIME_INS,&auxB, &vecAuxB);
+//	CopyBinA(NUM_COORD,0,&PVASys->B,&auxB);
+//	freeArray(&vecAuxB);
 	eye(NUM_COORD*3,1,&PVASys->F, &vecPVASys->vecF);
 	eye(NUM_COORD,TIME_INS,&auxF, &vecAuxF);
 	CopyBinA(0,NUM_COORD,&PVASys->F,&auxF);
+	freeArray(&vecAuxF);
+
+	eye(NUM_COORD,-0.5*TIME_INS*TIME_INS,&auxF, &vecAuxF);
+	auxF.pData[0] = 0;
+	auxF.pData[4] = 0;
+	CopyBinA(0,2*NUM_COORD,&PVASys->F,&auxF);
+	freeArray(&vecAuxF);
+
+	eye(NUM_COORD,-TIME_INS,&auxF, &vecAuxF);
+	auxF.pData[0] = 0;
+	auxF.pData[4] = 0;
+	CopyBinA(NUM_COORD,2*NUM_COORD,&PVASys->F,&auxF);
 	freeArray(&vecAuxF);
 
 	while(run)
@@ -111,7 +125,7 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
 			 {
 				  LLScoord= LLS(info); // Save the position estimated
 				  if(LLScoord.z > 0)
-					  LLScoord.z = -1.7; // Medium heigh of a person
+					  LLScoord.z = 1.7; // Medium heigh of a person
 				  PVASys->X.pData[0] = LLScoord.x;
 				  PVASys->X.pData[1] = LLScoord.y;
 				  PVASys->X.pData[2] = LLScoord.z;
@@ -123,9 +137,9 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
 				 if(Ninit==LIMIT_INIT_TRIES)
 				 {
 //					 // Coordinates for center of the room
-					 PVASys->X.pData[0] = -7.9545;
+					 PVASys->X.pData[0] = 7.9545;
 					 PVASys->X.pData[1] = 16.7495;
-					 PVASys->X.pData[2] = -1.7;
+					 PVASys->X.pData[2] = 1.7;
 					 run = 0; // Initialization has been finished
 				}
 			}
@@ -151,9 +165,9 @@ void Locthread(void const *argument)
   info.AnchorPos = (uint8*)pvPortMalloc(MAX_ANCHOR_LIST_SIZE*sizeof(uint8));
   info.Nummeasurements = 0;
 
-  zeros(2,3, &ins_meas, &vecIns_meas);
+  //zeros(2,3, &ins_meas, &vecIns_meas);
   initSystem(&PVASys,&info, &vecPVASys); // Initialize all Structures
-  zeros(3,3,&DCMbn, &vecDCMbn);
+  //zeros(3,3,&DCMbn, &vecDCMbn);
 
   while(1)
   {
@@ -175,7 +189,8 @@ void Locthread(void const *argument)
 
 		  if(info.Nummeasurements > NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
 		  {
-			  EKF_PVA(&PVASys,&info,&ins_meas,&DCMbn);
+			  //EKF_PVA(&PVASys,&info,&ins_meas,&DCMbn);
+			  EKF_PVA2(&PVASys,&info);
 			  printMatrix(&PVASys.X);
 		  }
 		  else // Send the predicted data
@@ -467,6 +482,7 @@ void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,arm_matrix_instance_f32 *ins_meas,arm_
 	arm_matrix_instance_f32 Xhat,Phat,accb,accn,Xnew,Pnew,h,Y,H,S,R,K;
 	uint8 i,j,k=0;
 
+
 	// Predict phase
 	//accn estimation
 
@@ -480,7 +496,6 @@ void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,arm_matrix_instance_f32 *ins_meas,arm_
 	arm_mat_init_f32(&accn, NUM_COORD, 1, vecAccn.array);
 	arm_mat_mult_f32(DCMbn, &accb, &accn);
 	freeArray(&vecAccb);
-
 	// F estimation
 	eye(NUM_COORD,-0.5*TIME_INS*TIME_INS,&auxF, &vecAuxF);
 	initArray(&vecProduct, NUM_COORD*NUM_COORD);
@@ -636,5 +651,184 @@ void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,arm_matrix_instance_f32 *ins_meas,arm_
 	freeArray(&vecPnew);
 }
 
+void EKF_PVA2(PVA_EKF *PVASys,LocData* Loc)
+{
 
+	//Array vecAccb,vecAccn, vecAuxF;
+	Array vecProduct, vecResult, vecXhat, vecTranspose, vecPhat, vecS, vecInverse, vecK, vecXnew, vecPnew;
+	Array vecR, vecH, vecY, vech;
+	//arm_matrix_instance_f32 auxF,accb,accn;
+	arm_matrix_instance_f32 Xhat,Phat, Xnew,Pnew,h,Y,H,S,R,K,product, result, transpose, inverse;
+	uint8 i,j,k=0;
+
+
+	// Predict phase
+	//accn estimation
+
+//	initArray(&vecAccb, NUM_COORD);
+//	arm_mat_init_f32(&accb, NUM_COORD, 1, vecAccb.array);
+//	accb.pData[0] = ins_meas->pData[0];
+//	accb.pData[1] = ins_meas->pData[1];
+//	accb.pData[2] = ins_meas->pData[2];
+//
+//	initArray(&vecAccn, NUM_COORD);
+//	arm_mat_init_f32(&accn, NUM_COORD, 1, vecAccn.array);
+//	arm_mat_mult_f32(DCMbn, &accb, &accn);
+//	freeArray(&vecAccb);
+	// F estimation
+//	eye(NUM_COORD,-0.5*TIME_INS*TIME_INS,&auxF, &vecAuxF);
+//	initArray(&vecProduct, NUM_COORD*NUM_COORD);
+//	arm_mat_init_f32(&product, NUM_COORD, NUM_COORD, vecProduct.array);
+//	arm_mat_mult_f32(&auxF, DCMbn, &product);
+//	freeArray(&vecAuxF);
+//	CopyBinA(0,2*NUM_COORD,&PVASys->F,&product);
+//	freeArray(&vecProduct);
+
+//	eye(NUM_COORD,-TIME_INS,&auxF, &vecAuxF);
+//	arm_mat_mult_f32(&auxF, DCMbn, &product);
+//	freeArray(&vecAuxF);
+//	CopyBinA(NUM_COORD,2*NUM_COORD,&PVASys->F,&product);  // Updated F
+//	freeArray(&vecProduct);
+
+
+
+	// Xhat estimation
+	initArray(&vecXhat, NUM_COORD*3);
+	arm_mat_init_f32(&Xhat, NUM_COORD*3, 1, vecXhat.array);
+	arm_mat_mult_f32(&PVASys->F,&PVASys->X,&Xhat);
+//
+//	initArray(&vecResult, NUM_COORD*3);
+//	arm_mat_init_f32(&result, NUM_COORD*3, 1, vecResult.array);
+//	arm_mat_mult_f32(&PVASys->B,&accn,&result);
+//	freeArray(&vecAccn);
+//
+//	initArray(&vecXhat, NUM_COORD*3);
+//	arm_mat_init_f32(&Xhat, NUM_COORD*3, 1, vecXhat.array);
+//	arm_mat_add_f32(&product, &result, &Xhat);
+//	freeArray(&vecProduct);
+//	freeArray(&vecResult);
+//
+	// Phat estimation
+	initArray(&vecTranspose, NUM_COORD*9*NUM_COORD);
+	arm_mat_init_f32(&transpose, NUM_COORD*3, NUM_COORD*3, vecTranspose.array);
+	arm_mat_trans_f32(&PVASys->F,&transpose);
+
+	initArray(&vecProduct, NUM_COORD*9*NUM_COORD);
+	arm_mat_init_f32(&product, NUM_COORD*3, NUM_COORD*3, vecProduct.array);
+	arm_mat_mult_f32(&PVASys->F,&PVASys->P,&product);
+
+	initArray(&vecResult, NUM_COORD*9*NUM_COORD);
+	arm_mat_init_f32(&result, NUM_COORD*3, NUM_COORD*3, vecResult.array);
+	arm_mat_mult_f32(&product,&transpose,&result);
+	freeArray(&vecProduct);
+	freeArray(&vecTranspose);
+	initArray(&vecPhat, NUM_COORD*9*NUM_COORD);
+	arm_mat_init_f32(&Phat, NUM_COORD*3, NUM_COORD*3, vecPhat.array);
+	arm_mat_add_f32(&result,&PVASys->Q,&Phat);
+	freeArray(&vecResult);
+
+	// Update phase
+	// h=Distance(Xhatposition,AnchorCoord) //Matrix Loc.Nummeasurementsx1
+	// Y=Loc.Range - h  //Matrix Loc.Nummeasurementsx1
+
+	// R computation
+	eye(Loc->Nummeasurements, STD_DIST*STD_DIST, &R, &vecR);
+
+	// h Computation
+	GetDistance(Loc,&Xhat,&h, &vech); //Matrix Loc.Nummeasurementsx1
+	// Y Computation
+	CalculateY(Loc,&h,&Y, &vecY);  //Matrix Loc.Nummeasurementsx1
+	// H Computation
+	zeros(Loc->Nummeasurements,NUM_COORD*3,&H, &vecH);
+	for(i=0;i<(Loc->Nummeasurements);i++)
+	{
+		k = i*H.numCols;
+		H.pData[k]=((Xhat.pData[0]) - (Loc->Coordinates[Loc->AnchorPos[i]].x)) / h.pData[i]; //X Coordinates
+		H.pData[k+1]=((Xhat.pData[1]) - (Loc->Coordinates[Loc->AnchorPos[i]].y)) / h.pData[i]; //Y Coordinates
+		#if(NUM_COORD==3)
+		H.pData[k+2]=((Xhat.pData[2]) - (Loc->Coordinates[Loc->AnchorPos[i]].z)) / h.pData[i]; //Z coordinates
+		#endif
+	}
+	freeArray(&vech);
+	// S Computation
+
+	initArray(&vecTranspose, Loc->Nummeasurements*NUM_COORD*3);
+	arm_mat_init_f32(&transpose, NUM_COORD*3, Loc->Nummeasurements, vecTranspose.array);
+	arm_mat_trans_f32(&H,&transpose);
+
+	initArray(&vecProduct, NUM_COORD*3*Loc->Nummeasurements);
+	arm_mat_init_f32(&product, Loc->Nummeasurements, NUM_COORD*3, vecProduct.array);
+	arm_mat_mult_f32(&H,&Phat,&product);
+
+	initArray(&vecResult, Loc->Nummeasurements*Loc->Nummeasurements);
+	arm_mat_init_f32(&result, Loc->Nummeasurements, Loc->Nummeasurements, vecResult.array);
+	arm_mat_mult_f32(&product,&transpose,&result);
+	freeArray(&vecProduct);
+
+	initArray(&vecS, Loc->Nummeasurements*Loc->Nummeasurements);
+	arm_mat_init_f32(&S, Loc->Nummeasurements, Loc->Nummeasurements, vecS.array);
+	arm_mat_add_f32(&result,&R,&S);
+	freeArray(&vecResult);
+	freeArray(&vecR);
+
+	// K Computation
+	initArray(&vecProduct, Loc->Nummeasurements*NUM_COORD*3);
+	arm_mat_init_f32(&product, NUM_COORD*3, Loc->Nummeasurements, vecProduct.array);
+	arm_mat_mult_f32(&Phat,&transpose,&product);
+	freeArray(&vecTranspose);
+
+	initArray(&vecInverse, Loc->Nummeasurements*Loc->Nummeasurements);
+	arm_mat_init_f32(&inverse, Loc->Nummeasurements, Loc->Nummeasurements, vecInverse.array);
+	arm_mat_inverse_f32(&S,&inverse);
+	freeArray(&vecS);
+
+	initArray(&vecK, Loc->Nummeasurements*NUM_COORD*3);
+	arm_mat_init_f32(&K, NUM_COORD*3, Loc->Nummeasurements, vecK.array);
+	arm_mat_mult_f32(&product,&inverse,&K);
+	freeArray(&vecProduct);
+	freeArray(&vecInverse);
+
+	// X Update Computation
+	initArray(&vecResult, NUM_COORD*3);
+	arm_mat_init_f32(&result, NUM_COORD*3, 1, vecResult.array);
+	arm_mat_mult_f32(&K,&Y,&result);
+	freeArray(&vecY);
+
+	initArray(&vecXnew, NUM_COORD*3);
+	arm_mat_init_f32(&Xnew, NUM_COORD*3, 1, vecXnew.array);
+	arm_mat_add_f32(&Xhat,&result,&Xnew);
+	freeArray(&vecXhat);
+	freeArray(&vecResult);
+
+	// P Update Computation
+	initArray(&vecProduct, NUM_COORD*3*NUM_COORD*3);
+	arm_mat_init_f32(&product, NUM_COORD*3, NUM_COORD*3, vecProduct.array);
+	arm_mat_mult_f32(&K,&H,&product);
+	freeArray(&vecK);
+	freeArray(&vecH);
+
+	initArray(&vecResult, NUM_COORD*NUM_COORD*9);
+	arm_mat_init_f32(&result, NUM_COORD*3, NUM_COORD*3, vecResult.array);
+	arm_mat_sub_f32(&PVASys->I,&product,&result);
+	freeArray(&vecProduct);
+
+	initArray(&vecPnew, NUM_COORD*NUM_COORD*9);
+	arm_mat_init_f32(&Pnew, NUM_COORD*3, NUM_COORD*3, vecPnew.array);
+	arm_mat_mult_f32(&result,&Phat,&Pnew);
+	freeArray(&vecResult);
+	freeArray(&vecPhat);
+
+	k = 0;
+	for(i=0;i<Pnew.numRows;i++) // Copy the new matrixes in the old ones
+	{
+		PVASys->X.pData[i] = Xnew.pData[i];
+		for(j=0;j<Pnew.numCols;j++)
+		{
+			PVASys->P.pData[k] = Pnew.pData[k];
+			k++;
+		}
+	}
+	freeArray(&vecXnew);
+	freeArray(&vecPnew);
+}
 
