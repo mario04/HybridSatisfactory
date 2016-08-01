@@ -29,7 +29,8 @@
 // NOTE: the maximum RX timeout is ~ 65ms
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
+#define LCD_BUFF_LEN (80)
+uint8 dataseq[LCD_BUFF_LEN];
 // -------------------------------------------------------------------------------------------------------------------
 // Functions
 // -------------------------------------------------------------------------------------------------------------------
@@ -411,7 +412,19 @@ int testapprun(instance_data_t *inst, int message)
                 }
             	if(inst->mode == TAG)
             	{
+#if REPORT_IMP
+            		inst->instToSleep = FALSE; // The ranging do not finish here
+            		inst->wait4ack = DWT_RESPONSE_EXPECTED; // Tag is waiting for report message.
+            		inst->rxRep[inst->rangeNum] = 0;	// Reset the number of responses
+            		inst->reportTO = MAX_ANCHOR_LIST_SIZE; // four reports are expected
+            		dwt_setrxaftertxdelay((uint32)RX_RESPONSE1_TURNAROUND); // After this delay the first report message will be sent.
+            		dwt_setrxtimeout((uint16)inst->fwtoTime_sy * MAX_ANCHOR_LIST_SIZE);
+            		inst->rxReportMask = 0;
+            		sprintf((char*)&dataseq[0], "RepFinal\n ");
+            		uartWriteLineNoOS((char *) dataseq); //send some data
+#else
             		inst->instToSleep = TRUE ;
+#endif
             	}
 				inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT; //will use RX FWTO to time out (set above)
             }
@@ -458,14 +471,23 @@ int testapprun(instance_data_t *inst, int message)
                 {
                     if(inst->mode == TAG)
                     {
-                    	inst->testAppState = TA_TXE_WAIT ;
+#if REPORT_IMP
+                    	inst->testAppState = TA_RXE_WAIT;
+                    	sprintf((char *)&dataseq[0], "RepRXEW /n");
+                    	uartWriteLineNoOS((char *) dataseq);
+                    	break;
+                    }
+#else
+                    	inst->testAppState = TA_RXE_WAIT ;
                     	inst->nextState = TA_TXPOLL_WAIT_SEND ;
                         break;
+
                     }
                     else
                     {
                     	instance_backtoanchor(inst);
 					}
+#endif
                 }
                 else if (inst->gotTO == 1) //timeout
                 {
@@ -708,7 +730,7 @@ int testapprun(instance_data_t *inst, int message)
 											|| ((A1_ANCHOR_ADDR == inst->instanceAddress16) && (inst->rxResponseMaskAnc & 0x4))
 											|| ((GATEWAY_ANCHOR_ADDR == inst->instanceAddress16) && (inst->rxResponseMaskAnc & 0x2)) ) //if A1's response received
 									{
-										inst->testAppState = TA_TXFINAL_WAIT_SEND ; // send our response / the final
+										inst->testAppState = TA_TXFINAL_WAIT_SEND; // send our response / the final
 									}
 									else //go to sleep
 									{
@@ -786,6 +808,48 @@ int testapprun(instance_data_t *inst, int message)
 
                             }
                             break; //RTLS_DEMO_MSG_ANCH_RESP
+#if REPORT_IMP
+                            case RTLS_DEMO_MSG_ANCH_REPORT:
+                            {
+                            	uint8 currentRangeNum = (messageData[REPORT_RNUM] + 1);
+                            	if(currentRangeNum == inst->rangeNum) //these are the previous ranges...
+								{
+									//copy the ToF and put into array (array holds last 4 ToFs)
+									memcpy(&inst->tofArray[(srcAddr[0]&0x3)], &(messageData[TOFREP]), 4);
+
+									//check if the ToF is valid, this makes sure we only report valid ToFs
+									//e.g. consider the case of reception of response from anchor a1 (we are anchor a2)
+									//if a1 got a Poll with previous Range number but got no Final, then the response will have
+									//the correct range number but the range will be INVALID_TOF
+									if(inst->tofArray[(srcAddr[0]&0x3)] != INVALID_TOF)
+									{
+										inst->rxReportMask |= (0x1 << (srcAddr[0]&0x3));
+									}
+
+								}
+								else
+								{
+									if(inst->tofArray[(srcAddr[0]&0x3)] != INVALID_TOF)
+									{
+										inst->tofArray[(srcAddr[0]&0x3)] = INVALID_TOF;
+									}
+								}
+                            	if(dw_event->type_pend == DWT_SIG_RX_PENDING)
+								{
+
+									// stay in TA_RX_WAIT_DATA - receiver is already enabled.
+								}
+                          								//DW1000 idle - all the reports are received
+							else //if(dw_event->type_pend == DWT_SIG_DW_IDLE)
+								{
+									/* Here is missing the report of the tofs values */
+									inst->testAppState = TA_TXE_WAIT ; //go to TA_TXE_WAIT first to check if it's sleep time
+									inst->nextState = TA_TXPOLL_WAIT_SEND ;
+									inst->instToSleep = TRUE;
+								}
+                            }
+                            break;
+#endif
 
 
                             case RTLS_DEMO_MSG_ANCH_FINAL:

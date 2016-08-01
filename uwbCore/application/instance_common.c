@@ -274,8 +274,14 @@ int instance_init(void)
     instance_data[instance].lateRX = 0;
 
     instance_data[instance].responseTO = -1; //initialise
+#if REPORT_IMP
+    instance_data[instance].reportTO = -1;
+#endif
     for(i=0; i<256; i++)
     {
+#if REPORT_IMP
+    	instance_data[instance].rxRep[i] = -10;
+#endif
     	instance_data[instance].rxResps[i] = -10;
     }
 
@@ -669,6 +675,41 @@ uint8 tagrxreenable(uint16 sourceAddress)
 	return type_pend;
 }
 
+uint8 tagrxreenableRep(uint16 sourceAddress){
+
+		uint8 type_pend = DWT_SIG_DW_IDLE;
+		uint8 anc = sourceAddress & 0x3;
+		int instance = 0;
+
+		switch(anc)
+		{
+			//if we got Response from anchor 3 - this is the last expected response - send the final
+			case 3:
+				type_pend = DWT_SIG_DW_IDLE;
+				break;
+
+			//if we got Response from anchor 0, 1, or 2 - go back to wait for next anchor's response
+			case 0:
+			case 1:
+			case 2:
+			default:
+				if(instance_data[instance].reportTO > 0) //can get here as result of error frame so need to check
+				{
+					dwt_setrxtimeout((uint16)instance_data[instance].fwtoTime_sy * instance_data[instance].reportTO); //reconfigure the timeout
+					dwt_rxenable(DWT_START_RX_IMMEDIATE) ;
+					type_pend = DWT_SIG_RX_PENDING ;
+				}
+				else //last response was not received (got error/frame was corrupt)
+				{
+					type_pend = DWT_SIG_DW_IDLE; //report timeout - send the final
+				}
+				break;
+		}
+
+		return type_pend;
+
+}
+
 /**
  * @brief function to re-enable the receiver and also adjust the timeout before sending the final message
  * if it is time so send the final message, the callback will notify the application, else the receiver is
@@ -1054,11 +1095,11 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
 			if(instance_data[instance].mode != LISTENER)
 			{
-				if(instance_data[instance].mode == TAG) //if tag got a good frame - this is probably a response, but could also be some other non-ranging frame
-					//(although due to frame filtering this is limited as non-addressed frames are filtered out)
-				{
-					instance_data[instance].responseTO--; //got 1 more response or other RX frame - need to reduce timeout (for next response)
-				}
+//				if(instance_data[instance].mode == TAG) //if tag got a good frame - this is probably a response, but could also be some other non-ranging frame
+//					//(although due to frame filtering this is limited as non-addressed frames are filtered out)
+//				{
+//					instance_data[instance].responseTO--; //got 1 more response or other RX frame - need to reduce timeout (for next response)
+//				}
 
 				//check if this is a TWR message (and also which one)
 				switch(dw_event.msgu.frame[fcode_index])
@@ -1077,7 +1118,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
 						if(instance_data[instance].mode == TAG)  //tag should ignore any other Polls from anchors
 						{
-							instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
+							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
 							handle_error_unknownframe(dw_event);
 							instance_data[instance].stopTimer = 1;
 							instance_data[instance].rxMsgCount++;
@@ -1116,7 +1157,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 					{
 						if(instance_data[instance].mode == TAG) //tag should ignore any other Polls from tags
 						{
-							instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
+							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
 							handle_error_unknownframe(dw_event);
 							instance_data[instance].stopTimer = 1;
 							instance_data[instance].rxMsgCount++;
@@ -1151,6 +1192,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 					    if(instance_data[instance].mode == TAG)
 					    {
 							uint8 index ;
+							instance_data[instance].responseTO--;
 							instance_data[instance].rxResps[instance_data[instance].rangeNum]++;
 							dw_event.type_pend = tagrxreenable(sourceAddress); //responseTO decremented above...
 							index = RRXT0 + 5*(sourceAddress & 0x3);
@@ -1228,11 +1270,24 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 					}
 					break;
 
+#if REPORT_IMP
+ 					case RTLS_DEMO_MSG_ANCH_REPORT:
+ 					{
+ 						instance_data[instance].reportTO--;
+ 						instance_data[instance].rxRep[instance_data[instance].rangeNum]++;
+ 						dw_event.type_pend = tagrxreenableRep(sourceAddress); //reportTO decremented above...
+ 						instance_data[instance].rxReportMask |= (0x1 << (sourceAddress & 0x3));
+
+ 					}
+ 					break;
+ #endif
+
 					case RTLS_DEMO_MSG_TAG_FINAL:
 					case RTLS_DEMO_MSG_ANCH_FINAL:
+
 						if(instance_data[instance].mode == TAG) //tag should ignore any other Final from anchors
 						{
-							instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
+							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
 							handle_error_unknownframe(dw_event);
 							instance_data[instance].stopTimer = 1;
 							instance_data[instance].rxMsgCount++;
@@ -1241,6 +1296,10 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 					//if anchor fall into case below and process the frame
 					default:  //process rx frame
 					{
+						if(instance_data[instance].mode == TAG) //tag should ignore any other Final from anchors
+						{
+							instance_data[instance].responseTO--;
+						}
 						dw_event.type_pend = DWT_SIG_DW_IDLE;
 					}
 					break;

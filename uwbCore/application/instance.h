@@ -30,7 +30,7 @@ extern "C" {
 // once it receives a report or times out, before the next poll message is sent (before next ranging exchange is started).
 
 #define CORRECT_RANGE_BIAS  (1)     // Compensate for small bias due to uneven accumulator growth at close up high power
-
+#define REPORT_IMP (1) 				//Report messages implementation. Tag will receive the TOF value from anchor in the slot time
 
 #define ANCTOANCTWR (0) //if set to 1 then anchor to anchor TWR will be done in the last slot
 /******************************************************************************************************************
@@ -51,6 +51,7 @@ extern "C" {
 #define RTLS_DEMO_MSG_ANCH_RESP2            (0x72)          // Anchor response to poll from anchor
 #define RTLS_DEMO_MSG_ANCH_FINAL            (0x73)          // Anchor final massage back to Anchor
 #define RTLS_DEMO_MSG_TAG_FINAL             (0x82)          // Tag final massage back to Anchor
+#define RTLS_DEMO_MSG_ANCH_REPORT			(0X2A)			// Anchor report message
 
 
 //lengths including the Decaranging Message Function Code byte
@@ -121,6 +122,8 @@ extern "C" {
 #define TOFR                                3				// ToF (n-1) 4 bytes
 #define TOFRN								7				// range number 1 byte
 #define POLL_RNUM                           1               // Poll message range number
+#define REPORT_RNUM							1				// Report message range number
+#define TOFREP								2
 
 //this it the delay used for configuring the receiver on delay (wait for response delay)
 //NOTE: this RX_RESPONSE_TURNAROUND is dependent on the microprocessor and code optimisations
@@ -407,6 +410,10 @@ typedef struct
 
 	uint8 rxRespsIdx; //index into the array below (current tag (4bits)/seq number(4bits))
 	int8 rxResps[256];
+
+	int8 rxRep[256];
+	int8 rxReportMask;
+	int8 reportTO;
 
 	int dwIDLE; //set to 1 when the RST goes high after wake up (it is set in process_dwRSTn_irq)
 

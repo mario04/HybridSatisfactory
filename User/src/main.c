@@ -96,7 +96,7 @@ int main(void){
 	osThreadDef(uwbInitTask, UwbInitTask, osPriorityNormal, 0, 128);
 	uwbInitTaskHandle = osThreadCreate(osThread(uwbInitTask), NULL);
 	// Queues
-	MsgIns = osMessageCreate(osMessageQ(MsgIns), NULL);  // create msg queue
+	//MsgIns = osMessageCreate(osMessageQ(MsgIns), NULL);  // create msg queue
 	MsgUwb = osMessageCreate(osMessageQ(MsgUwb), NULL);  // create msg queue
 
 	osThreadDef(Loc_thread, Locthread, osPriorityNormal, 0, 512);
