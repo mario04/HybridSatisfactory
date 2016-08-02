@@ -540,7 +540,7 @@ void inst_processrxtimeout(instance_data_t *inst)
        		inst->instToSleep = TRUE ;
        		// initiate the re-transmission of the poll that was not responded to
 			inst->testAppState = TA_TXE_WAIT ;
-			inst->nextState = TA_TXPOLL_WAIT_SEND ;
+			inst->nextState = TA_TXPOLL_WAIT_SEND ; // Process Also when the report message is implemented
         }
         else //send the final
         {

@@ -436,7 +436,63 @@ int testapprun(instance_data_t *inst, int message)
             }
             break;
 
+#if REPORT_IMP
+        case TA_TXREPORT_WAIT_SEND:
+        {
+        	inst->msg_f.messageData[REPORT_RNUM] = inst->rangeNum;
+        	inst->msg_f.messageData[FCODE] = RTLS_DEMO_MSG_ANCH_REPORT;
+        	inst->psduLength = (TAG_POLL_MSG_LEN + FRAME_CRTL_AND_ADDRESS_S + FRAME_CRC);
+        	inst->msg_f.seqNum = inst->frameSN++; //copy sequence number and then increment
+        	inst->msg_f.sourceAddr[0] = inst->eui64[0];
+        	inst->msg_f.sourceAddr[1] = inst->eui64[1];
+        	dwt_writetxdata(inst->psduLength, (uint8 *)  &inst->msg_f, 0) ;
+        	inst->wait4ack = 0;
+        	switch(inst->shortAdd_idx){
+        		case GATEWAY_ANCHOR_ADDR&0x3:
+					inst->delayedReplyTime = inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
+					break;
+        		case A1_ANCHOR_ADDR&0x3:
+					inst->delayedReplyTime = inst->fwtoTimeAnc_sy+inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
+					break;
+        		case A2_ANCHOR_ADDR&0x3:
+					inst->delayedReplyTime = (2*inst->fwtoTimeAnc_sy)+inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
+					break;
+        		case A3_ANCHOR_ADDR&0x3:
+					inst->delayedReplyTime = (3*inst->fwtoTimeAnc_sy)+inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
+					break;
+        		default:
+        			sprintf((char*)&dataseq[0], "Error...\n ");
+        			uartWriteLineNoOS((char *) dataseq); //send some data
+        			break;
+        	}
 
+        	if(instancesenddlypacket(inst, DWT_START_TX_DELAYED))
+				{
+					// initiate the re-transmission
+					if(inst->mode == TAG)
+					{
+						inst->testAppState = TA_TXE_WAIT ; //go to TA_TXE_WAIT first to check if it's sleep time
+						inst->nextState = TA_TXPOLL_WAIT_SEND ;
+					}
+					else
+					{
+						//A0 - failed to send Final
+						//A1 - failed to send Final
+						//go back to RX and behave as anchor
+						instance_backtoanchor(inst);
+					}
+					break; //exit this switch case...
+				}
+				else
+				{
+					inst->testAppState = TA_TX_WAIT_CONF;                                               // wait confirmation
+					inst->previousState = TA_TXREPORT_WAIT_SEND;
+
+				}
+
+        	}
+        	break;
+#endif
         case TA_TX_WAIT_CONF :
 #if defined(DEBUG)
 		   printf("TA_TX_WAIT_CONF %d m%d states %08x %08x\n", inst->previousState, message, dwt_read32bitreg(0x19), dwt_read32bitreg(0x0f)) ;
@@ -483,6 +539,9 @@ int testapprun(instance_data_t *inst, int message)
                     	uartWriteLineNoOS((char *) dataseq);
                     	break;
                     }
+                    else{
+                    	instance_backtoanchor(inst);
+                    }
 #else
                     	inst->testAppState = TA_TXE_WAIT ;
                     	inst->nextState = TA_TXPOLL_WAIT_SEND ;
@@ -505,6 +564,14 @@ int testapprun(instance_data_t *inst, int message)
 					inst->wait4ack = 0 ; //clear this
 					break;
                 }
+#if REPORT_IMP
+                else if(inst->previousState == TA_TXREPORT_WAIT_SEND){
+                	inst->testAppState = TA_RXE_WAIT ;
+                	sprintf((char*)&dataseq[0], "RepConf\n ");
+                	uartWriteLineNoOS((char *) dataseq);
+                	break;
+                }
+#endif
                 else
                 {
 					inst->txu.txTimeStamp = dw_event->timeStamp;
@@ -982,8 +1049,8 @@ int testapprun(instance_data_t *inst, int message)
 								instancesetantennadelays(); //this will update the antenna delay if it has changed
 					            instancesettxpower(); // configure TX power if it has changed
 
-					            inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
-
+					            //inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
+					            inst->testAppState = TA_TXREPORT_WAIT_SEND;
                             }
                             break; //RTLS_DEMO_MSG_TAG_FINAL
 
