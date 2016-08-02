@@ -167,7 +167,8 @@ typedef enum inst_states
     TA_SLEEP_DONE,               //9
     TA_TXRESPONSE_SENT_POLLRX,    //10
     TA_TXRESPONSE_SENT_RESPRX,    //11
-    TA_TXRESPONSE_SENT_TORX		  //12
+    TA_TXRESPONSE_SENT_TORX,	//12
+	TA_TXREPORT_WAIT_SEND		//13
 
 } INST_STATES;
 

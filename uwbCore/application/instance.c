@@ -385,6 +385,20 @@ int testapprun(instance_data_t *inst, int message)
 				dwt_writetxdata(inst->psduLength, (uint8 *)  &inst->msg_f, 0) ;	// write the frame data
 
 				inst->wait4ack = 0; //clear the flag not using wait for response as this message ends the ranging exchange
+#if REPORT_IMP
+				if(inst->mode == TAG)
+				{
+            		inst->instToSleep = FALSE; // The ranging do not finish here
+            		inst->wait4ack = DWT_RESPONSE_EXPECTED; // Tag is waiting for report message.
+            		inst->rxRep[inst->rangeNum] = 0;	// Reset the number of responses
+            		inst->reportTO = MAX_ANCHOR_LIST_SIZE; // four reports are expected
+            		dwt_setrxaftertxdelay((uint32)RX_RESPONSE1_TURNAROUND); // After this delay the first report message will be sent.
+            		dwt_setrxtimeout((uint16)inst->fwtoTime_sy * MAX_ANCHOR_LIST_SIZE);
+            		inst->rxReportMask = 0;
+            		sprintf((char*)&dataseq[0], "RepFinal\n ");
+            		uartWriteLineNoOS((char *) dataseq); //send some data
+            	}
+#endif
 
 				if(instancesenddlypacket(inst, DWT_START_TX_DELAYED))
                 {
@@ -410,22 +424,14 @@ int testapprun(instance_data_t *inst, int message)
                     inst->previousState = TA_TXFINAL_WAIT_SEND;
 
                 }
+#if (REPORT_IMP==0)
             	if(inst->mode == TAG)
             	{
-#if REPORT_IMP
-            		inst->instToSleep = FALSE; // The ranging do not finish here
-            		inst->wait4ack = DWT_RESPONSE_EXPECTED; // Tag is waiting for report message.
-            		inst->rxRep[inst->rangeNum] = 0;	// Reset the number of responses
-            		inst->reportTO = MAX_ANCHOR_LIST_SIZE; // four reports are expected
-            		dwt_setrxaftertxdelay((uint32)RX_RESPONSE1_TURNAROUND); // After this delay the first report message will be sent.
-            		dwt_setrxtimeout((uint16)inst->fwtoTime_sy * MAX_ANCHOR_LIST_SIZE);
-            		inst->rxReportMask = 0;
-            		sprintf((char*)&dataseq[0], "RepFinal\n ");
-            		uartWriteLineNoOS((char *) dataseq); //send some data
-#else
+
             		inst->instToSleep = TRUE ;
-#endif
+
             	}
+#endif
 				inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT; //will use RX FWTO to time out (set above)
             }
             break;
@@ -473,12 +479,12 @@ int testapprun(instance_data_t *inst, int message)
                     {
 #if REPORT_IMP
                     	inst->testAppState = TA_RXE_WAIT;
-                    	sprintf((char *)&dataseq[0], "RepRXEW /n");
+                    	sprintf((char *)&dataseq[0], "RepRXEW \n");
                     	uartWriteLineNoOS((char *) dataseq);
                     	break;
                     }
 #else
-                    	inst->testAppState = TA_RXE_WAIT ;
+                    	inst->testAppState = TA_TXE_WAIT ;
                     	inst->nextState = TA_TXPOLL_WAIT_SEND ;
                         break;
 
@@ -846,6 +852,7 @@ int testapprun(instance_data_t *inst, int message)
 									inst->testAppState = TA_TXE_WAIT ; //go to TA_TXE_WAIT first to check if it's sleep time
 									inst->nextState = TA_TXPOLL_WAIT_SEND ;
 									inst->instToSleep = TRUE;
+
 								}
                             }
                             break;
