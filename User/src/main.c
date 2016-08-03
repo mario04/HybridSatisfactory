@@ -60,9 +60,9 @@ void StartDefaultTask(void const * argument);
 void PermanentBlinkTask(void const * argument);
 
 //-----------------Queues-------------------
-osMessageQId  MsgIns,MsgUwb;
-osMessageQDef(MsgIns, 1, Ins_data);// Define message queue (Inertial sensor data)
-osMessageQDef(MsgUwb, 1, Ranging_data);// Define message queue (UWB data)
+//osMessageQId  MsgIns,MsgUwb;
+//osMessageQDef(MsgIns, 1, Ins_data);// Define message queue (Inertial sensor data)
+//osMessageQDef(MsgUwb, 1, Ranging_data);// Define message queue (UWB data)
 //-------------------------------------------
 
 int main(void){
@@ -85,22 +85,22 @@ int main(void){
 	/* Test UART Transmit without semaphores */
 //	uartWriteLineNoOS("SatisFactory Application\n");
 //
-//	osThreadDef(permanentBlinkTask, PermanentBlinkTask, osPriorityNormal, 0, 64);
-//	permanentBlinkTaskHandle = osThreadCreate(osThread(permanentBlinkTask), NULL);
+	osThreadDef(permanentBlinkTask, PermanentBlinkTask, osPriorityNormal, 0, 128);//64
+	permanentBlinkTaskHandle = osThreadCreate(osThread(permanentBlinkTask), NULL);
 
 	/* Create the threads and semaphore */
 	// Inertial sensor task
 //	osThreadDef(mpuInitTask, MpuInitTask, osPriorityNormal, 0, 128);
 //	mpuInitTaskHandle = osThreadCreate(osThread(mpuInitTask), NULL);
 	// UWB task
-	osThreadDef(uwbInitTask, UwbInitTask, osPriorityNormal, 0, 128);
+	osThreadDef(uwbInitTask, UwbInitTask, osPriorityNormal, 0, 512);//128
 	uwbInitTaskHandle = osThreadCreate(osThread(uwbInitTask), NULL);
 	// Queues
 	//MsgIns = osMessageCreate(osMessageQ(MsgIns), NULL);  // create msg queue
-	MsgUwb = osMessageCreate(osMessageQ(MsgUwb), NULL);  // create msg queue
+	//MsgUwb = osMessageCreate(osMessageQ(MsgUwb), NULL);  // create msg queue
 
-	osThreadDef(Loc_thread, Locthread, osPriorityNormal, 0, 512);
-	ThreadLocid = osThreadCreate(osThread(Loc_thread), NULL);
+//	osThreadDef(Loc_thread, Locthread, osPriorityNormal , 0, 512);
+//	ThreadLocid = osThreadCreate(osThread(Loc_thread), NULL);
 
 	/* Start scheduler */
 	osKernelStart();
