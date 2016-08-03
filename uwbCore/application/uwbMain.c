@@ -444,11 +444,11 @@ int uwb_setup(void)
 
 	port_EnableEXT_IRQ(); //enable ScenSor IRQ before starting
 
-	osThreadDef(uwbMainTask, UwbMainTask, osPriorityNormal, 0, 128);
+	osThreadDef(uwbMainTask, UwbMainTask, osPriorityNormal, 0, 128); // 128
 	uwbMainTaskHandle = osThreadCreate(osThread(uwbMainTask), 0);
 
 
-	osThreadDef(uwbProcessInterruptTask, UwbProcessInterruptTask, osPriorityAboveNormal, 0, 256);
+	osThreadDef(uwbProcessInterruptTask, UwbProcessInterruptTask, osPriorityAboveNormal, 0, 256); // 256
 	uwbProcessInterruptTaskHandle = osThreadCreate(osThread(uwbProcessInterruptTask), 0);
 
 
@@ -476,6 +476,7 @@ void UwbMainTask(void const * argument) {
 
 		int monitor_local = instance_data[0].monitor ;
 		int txdiff = (portGetTickCnt() - instance_data[0].timeofTx);
+		//osThreadYield();
 
 		instance_run();
 		instance_mode = instancegetrole();
