@@ -1295,14 +1295,13 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 						}
 #if REPORT_IMP
 						else if(instance_data[instance].mode == ANCHOR){
-							uint8 *frame = &dw_event.msgu.frame[0];
-							memcpy(&instance_data[instance].msg_f.destAddr[0], &frame[srcAddr_index], ADDR_BYTE_SIZE_S);
+							//uint8 *frame = &dw_event.msgu.frame[0];
+							//memcpy(&instance_data[instance].msg_f.destAddr[0], &frame[srcAddr_index], ADDR_BYTE_SIZE_S);
 							instance_data[instance].delayedReplyTime = dw_event.timeStamp32h;
-							dw_event.type_pend = DWT_SIG_DW_IDLE;
 						}
 						break;
 #endif
-					//if anchor fall into case below and process the frame
+//					//if anchor fall into case below and process the frame
 					default:  //process rx frame
 					{
 						if(instance_data[instance].mode == TAG) //tag should ignore any other Final from anchors
