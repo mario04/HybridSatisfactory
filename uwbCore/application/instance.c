@@ -15,7 +15,7 @@
 #include "deca_device_api.h"
 #include "deca_spi.h"
 #include "deca_regs.h"
-
+#include "uart.h"
 #include "instance.h"
 #include "uwbMain.h"
 // -------------------------------------------------------------------------------------------------------------------
@@ -445,21 +445,19 @@ int testapprun(instance_data_t *inst, int message)
         	inst->msg_f.messageData[FCODE] = RTLS_DEMO_MSG_ANCH_REPORT;
         	inst->psduLength = (TAG_POLL_MSG_LEN + FRAME_CRTL_AND_ADDRESS_S + FRAME_CRC);
         	inst->msg_f.seqNum = inst->frameSN++; //copy sequence number and then increment
-        	inst->msg_f.sourceAddr[0] = inst->eui64[0];
-        	inst->msg_f.sourceAddr[1] = inst->eui64[1];
         	dwt_writetxdata(inst->psduLength, (uint8 *)  &inst->msg_f, 0) ;
         	inst->wait4ack = 0;
         	switch(inst->shortAdd_idx){
-        		case GATEWAY_ANCHOR_ADDR&0x3:
+        		case GATEWAY_ANCHOR_ADDR&0x0003:
 					inst->delayedReplyTime = inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
 					break;
-        		case A1_ANCHOR_ADDR&0x3:
+        		case A1_ANCHOR_ADDR&0x0003:
 					inst->delayedReplyTime = inst->fwtoTimeAnc_sy+inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
 					break;
-        		case A2_ANCHOR_ADDR&0x3:
+        		case A2_ANCHOR_ADDR&0x0003:
 					inst->delayedReplyTime = (2*inst->fwtoTimeAnc_sy)+inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
 					break;
-        		case A3_ANCHOR_ADDR&0x3:
+        		case A3_ANCHOR_ADDR&0x0003:
 					inst->delayedReplyTime = (3*inst->fwtoTimeAnc_sy)+inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
 					break;
         		default:
@@ -481,7 +479,7 @@ int testapprun(instance_data_t *inst, int message)
 						//A0 - failed to send Final
 						//A1 - failed to send Final
 						//go back to RX and behave as anchor
-						instance_backtoanchor(inst);
+						//instance_backtoanchor(inst);
 					}
 					break; //exit this switch case...
 				}
@@ -890,6 +888,10 @@ int testapprun(instance_data_t *inst, int message)
 #if REPORT_IMP
                             case RTLS_DEMO_MSG_ANCH_REPORT:
                             {
+#if UART_DEBUG
+                            	sprintf((char*)&dataseq[0], "RepState\n ");
+                            	uartWriteLineNoOS((char *) dataseq);
+#endif
                             	uint8 currentRangeNum = (messageData[REPORT_RNUM] + 1);
                             	if(currentRangeNum == inst->rangeNum) //these are the previous ranges...
 								{

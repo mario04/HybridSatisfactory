@@ -14,7 +14,7 @@
 #include "deca_port.h"
 #include "deca_device_api.h"
 #include "deca_spi.h"
-
+#include "uart.h"
 #include "instance.h"
 
 // -------------------------------------------------------------------------------------------------------------------
