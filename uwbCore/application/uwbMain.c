@@ -45,9 +45,9 @@
 #define BUTTON_0			FALSE
 
 #define TA_SW1_3			FALSE
-#define TA_SW1_4			FALSE		/* FALSE: Tag - TRUE: Anchor */
+#define TA_SW1_4			TRUE		/* FALSE: Tag - TRUE: Anchor */
 #define TA_SW1_5			FALSE
-#define TA_SW1_6			FALSE
+#define TA_SW1_6			TRUE
 #define TA_SW1_7			FALSE
 #define TA_SW1_8			FALSE
 
@@ -513,92 +513,92 @@ void UwbMainTask(void const * argument) {
 
 		rx = instancenewrange();
 
-		if(rx != TOF_REPORT_NUL)
-		{
-			if(instance_mode == TAG)
-			{
-				dataqueue.Range=&inst_idist[0];
-				osMessagePut(MsgUwb,&dataqueue, osWaitForever);
-			}
-		}
+//		if(rx != TOF_REPORT_NUL)
+//		{
+//			if(instance_mode == TAG)
+//			{
+//				dataqueue.Range=&inst_idist[0];
+//				osMessagePut(MsgUwb,&dataqueue, osWaitForever);
+//			}
+//		}
 
 		//if there is a new ranging report received or a new range has been calculated, then prepare data
 		//to output over USB - Virtual COM port, and update the LCD
-//		if(rx != TOF_REPORT_NUL)
-//		{
-//			int r= 0, aaddr, taddr; //l = 0,
-//			int rangeTime, valid;
-//			uint16 txa, rxa;
-//
-//			//send the new range information to LCD and/or USB
-//			aaddr = instancenewrangeancadd() & 0xf;
-//			taddr = instancenewrangetagadd() & 0xf;
-//			rangeTime = instancenewrangetim() & 0xffffffff;
-//
-//			//if((dr_mode & 0x1) == 0) //only print for 110k
-//			//if(printTWRReports + 2000 <= portGetTickCnt())
-//			if(true)
-//			{
-//
-//				//anchors will print a range to each tag in sequence with 1 second pause
-//				//they will show the last rage to that tag
-//				if(instance_mode == ANCHOR)
-//				{
-//					int b = 0;
-//					double rangetotag = getTagDist(toggle) ;
-//
-//					while(((int) (rangetotag*1000)) == 0) //if 0 then go to next tag
+		if(rx != TOF_REPORT_NUL)
+		{
+			int r= 0, aaddr, taddr; //l = 0,
+			int rangeTime, valid;
+			uint16 txa, rxa;
+
+			//send the new range information to LCD and/or USB
+			aaddr = instancenewrangeancadd() & 0xf;
+			taddr = instancenewrangetagadd() & 0xf;
+			rangeTime = instancenewrangetim() & 0xffffffff;
+
+			//if((dr_mode & 0x1) == 0) //only print for 110k
+			//if(printTWRReports + 2000 <= portGetTickCnt())
+			if(true)
+			{
+
+				//anchors will print a range to each tag in sequence with 1 second pause
+				//they will show the last rage to that tag
+				if(instance_mode == ANCHOR)
+				{
+					int b = 0;
+					double rangetotag = getTagDist(toggle) ;
+
+					while(((int) (rangetotag*1000)) == 0) //if 0 then go to next tag
+					{
+						if(b > MAX_TAG_LIST_SIZE)
+							break;
+
+						toggle++;
+						if(toggle >= MAX_TAG_LIST_SIZE)
+							toggle = 0;
+
+						rangetotag = getTagDist(toggle) ;
+						b++;
+					}
+
+					sprintf((char*)&dataseq[0], "A%d T%d: %3.2f m", ancaddr, toggle, rangetotag);
+					uartWriteLineNoOS((char *) dataseq); //send some data
+
+					toggle++;
+
+					if(toggle >= MAX_TAG_LIST_SIZE)
+						toggle = 0;
+				}
+				else if(instance_mode == TAG)
+				{
+					sprintf((char*)&dataseq[0], "T%d A%d: %3.2f m", tagaddr, toggle, instancegetidist(toggle));
+
+//					toggle = 1;
+					uartWriteLineNoOS((char *) dataseq); //send some data
+
+					toggle++;
+
+					if(toggle >= MAX_ANCHOR_LIST_SIZE)
+					{
+						toggle = 0;
+					}
+
+					//!!!!!! Send data to the Localization Thread !!!!!!!!!!!
+//					for(or=0;or<MAX_ANCHOR_LIST_SIZE;or++)
 //					{
-//						if(b > MAX_TAG_LIST_SIZE)
-//							break;
-//
-//						toggle++;
-//						if(toggle >= MAX_TAG_LIST_SIZE)
-//							toggle = 0;
-//
-//						rangetotag = getTagDist(toggle) ;
-//						b++;
+//						ranging[or]=instancegetidist(or+1);
+//						sprintf((char*)&dataseq[0], "Range: %3.2f m", tagaddr, toggle, ranging[or]);
+//						uartWriteLineNoOS((char *) dataseq); //send some data
 //					}
-//
-//					sprintf((char*)&dataseq[0], "A%d T%d: %3.2f m", ancaddr, toggle, rangetotag);
-//					uartWriteLineNoOS((char *) dataseq); //send some data
-//
-//					toggle++;
-//
-//					if(toggle >= MAX_TAG_LIST_SIZE)
-//						toggle = 0;
-//				}
-//				else if(instance_mode == TAG)
-//				{
-//					sprintf((char*)&dataseq[0], "T%d A%d: %3.2f m", tagaddr, toggle, instancegetidist(toggle));
-//
-////					toggle = 1;
-//					uartWriteLineNoOS((char *) dataseq); //send some data
-//
-//					toggle++;
-//
-//					if(toggle >= MAX_ANCHOR_LIST_SIZE)
-//					{
-//						toggle = 0;
-//					}
-//
-//					//!!!!!! Send data to the Localization Thread !!!!!!!!!!!
-////					for(or=0;or<MAX_ANCHOR_LIST_SIZE;or++)
-////					{
-////						ranging[or]=instancegetidist(or+1);
-////						sprintf((char*)&dataseq[0], "Range: %3.2f m", tagaddr, toggle, ranging[or]);
-////						uartWriteLineNoOS((char *) dataseq); //send some data
-////					}
-////					data.range=&ranging[0];
-////					osMessagePut(MsgBox,&data, osWaitForever);
-//
-//					// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//				}
-//
-//				//update the print time
-//				printTWRReports = portGetTickCnt();
-//			}
-//		} //if new range present
+//					data.range=&ranging[0];
+//					osMessagePut(MsgBox,&data, osWaitForever);
+
+					// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+				}
+
+				//update the print time
+				printTWRReports = portGetTickCnt();
+			}
+		} //if new range present
 
 	osThreadYield(); // Give the power to other task, it has finished the ranging task
 
