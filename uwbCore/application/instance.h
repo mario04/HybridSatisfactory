@@ -324,6 +324,7 @@ typedef struct
 	int ancRespRxDelay ;
 
 	int fwtoTime_sy ;	//this is final message duration (longest out of ranging messages)
+	// The previous variable is not the final message duration. It is the duration of the response message plus some margin (700 us)
 	int fwtoTimeAnc_sy ;
 	uint32 delayedReplyTime;		// delayed reply time of ranging-init/response/final message
 
