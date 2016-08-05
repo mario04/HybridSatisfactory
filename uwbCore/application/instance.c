@@ -394,6 +394,7 @@ int testapprun(instance_data_t *inst, int message)
             		inst->reportTO = MAX_ANCHOR_LIST_SIZE; // four reports are expected
             		dwt_setrxaftertxdelay((uint32)RX_RESPONSE1_TURNAROUND); // After this delay the first report message will be sent.
             		dwt_setrxtimeout((uint16)inst->fwtoTime_sy * MAX_ANCHOR_LIST_SIZE);
+
             		inst->rxReportMask = 0;
 #if UART_DEBUG
             		sprintf((char*)&dataseq[0], "RepFinal\n ");
@@ -454,13 +455,13 @@ int testapprun(instance_data_t *inst, int message)
 					inst->delayedReplyTime = inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
 					break;
         		case A1_ANCHOR_ADDR&0x3:
-					inst->delayedReplyTime = inst->fwtoTimeAnc_sy+inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
+					inst->delayedReplyTime = inst->delayedReplyTime + 2*(inst->fixedReplyDelayAnc>>8);
 					break;
         		case A2_ANCHOR_ADDR&0x3:
-					inst->delayedReplyTime = (2*inst->fwtoTimeAnc_sy)+inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
+					inst->delayedReplyTime = inst->delayedReplyTime + 3*(inst->fixedReplyDelayAnc>>8);
 					break;
         		case A3_ANCHOR_ADDR&0x3:
-					inst->delayedReplyTime = (3*inst->fwtoTimeAnc_sy)+inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
+					inst->delayedReplyTime = inst->delayedReplyTime + 4*(inst->fixedReplyDelayAnc>>8);
 					break;
         		default:
         			sprintf((char*)&dataseq[0], "Error...\n ");
@@ -989,7 +990,7 @@ int testapprun(instance_data_t *inst, int message)
 									printf("FinalRx Timestamp: %4.15e\n", convertdevicetimetosecu(dw_event.timeStamp));
 #endif
 */
-									inst->delayedReplyTime = 0 ;
+									//inst->delayedReplyTime = 0 ;
 
 									// times measured at Tag extracted from the message buffer
 									// extract 40bit times
