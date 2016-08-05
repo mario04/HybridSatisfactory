@@ -453,13 +453,13 @@ int testapprun(instance_data_t *inst, int message)
 					inst->delayedReplyTime = inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
 					break;
         		case A1_ANCHOR_ADDR&0x0003:
-					inst->delayedReplyTime = inst->fwtoTimeAnc_sy+inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
+					inst->delayedReplyTime = inst->delayedReplyTime + 2*(inst->fixedReplyDelayAnc>>8);
 					break;
         		case A2_ANCHOR_ADDR&0x0003:
-					inst->delayedReplyTime = (2*inst->fwtoTimeAnc_sy)+inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
+					inst->delayedReplyTime = inst->delayedReplyTime + 3*(inst->fixedReplyDelayAnc>>8);
 					break;
         		case A3_ANCHOR_ADDR&0x0003:
-					inst->delayedReplyTime = (3*inst->fwtoTimeAnc_sy)+inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
+					inst->delayedReplyTime = inst->delayedReplyTime + 4*(inst->fixedReplyDelayAnc>>8);
 					break;
         		default:
         			sprintf((char*)&dataseq[0], "Error...\n ");
