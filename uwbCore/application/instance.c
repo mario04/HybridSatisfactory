@@ -990,7 +990,9 @@ int testapprun(instance_data_t *inst, int message)
 									printf("FinalRx Timestamp: %4.15e\n", convertdevicetimetosecu(dw_event.timeStamp));
 #endif
 */
-									//inst->delayedReplyTime = 0 ;
+#if REPORT_IMP == 0
+									inst->delayedReplyTime = 0 ;
+#endif
 
 									// times measured at Tag extracted from the message buffer
 									// extract 40bit times
@@ -1055,9 +1057,11 @@ int testapprun(instance_data_t *inst, int message)
 
 								instancesetantennadelays(); //this will update the antenna delay if it has changed
 					            instancesettxpower(); // configure TX power if it has changed
-
-					            //inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
+#if REPORT_iMP
 					            inst->testAppState = TA_TXREPORT_WAIT_SEND;
+#else
+					            inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
+#endif
                             }
                             break; //RTLS_DEMO_MSG_TAG_FINAL
 
