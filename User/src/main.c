@@ -93,7 +93,7 @@ int main(void){
 //	osThreadDef(mpuInitTask, MpuInitTask, osPriorityNormal, 0, 128);
 //	mpuInitTaskHandle = osThreadCreate(osThread(mpuInitTask), NULL);
 	// UWB task
-	osThreadDef(uwbInitTask, UwbInitTask, osPriorityNormal, 0, 512); // 128
+	osThreadDef(uwbInitTask, UwbInitTask, osPriorityNormal, 0, 128); // 128
 	uwbInitTaskHandle = osThreadCreate(osThread(uwbInitTask), NULL);
 	// Queues
 	//MsgIns = osMessageCreate(osMessageQ(MsgIns), NULL);  // create msg queue
