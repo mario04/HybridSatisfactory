@@ -996,8 +996,9 @@ int testapprun(instance_data_t *inst, int message)
 									printf("FinalRx Timestamp: %4.15e\n", convertdevicetimetosecu(dw_event.timeStamp));
 #endif
 */
-									//inst->delayedReplyTime = 0 ;
-
+#if REMP_IMP == 0
+									inst->delayedReplyTime = 0 ;
+#endif
 									// times measured at Tag extracted from the message buffer
 									// extract 40bit times
 									memcpy(&tagPollTxTime, &(messageData[PTXT]), 5);
@@ -1047,8 +1048,8 @@ int testapprun(instance_data_t *inst, int message)
 								else //anchor to anchor ranging
 								{
 									inst->newRangeTagAddress = srcAddr[0] + ((uint16) srcAddr[1] << 8);
-									//time-of-flight
 									inst->tofAnc[tof_idx] = tof;
+									//time-of-flight
 								}
 
 					            //reset the response count
@@ -1062,8 +1063,11 @@ int testapprun(instance_data_t *inst, int message)
 								instancesetantennadelays(); //this will update the antenna delay if it has changed
 					            instancesettxpower(); // configure TX power if it has changed
 
-					            //inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
-					            inst->testAppState = TA_TXREPORT_WAIT_SEND;
+#if REMP_IMP
+					             inst->testAppState = TA_TXREPORT_WAIT_SEND;
+#else
+					             inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
+#endif
                             }
                             break; //RTLS_DEMO_MSG_TAG_FINAL
 
