@@ -189,6 +189,7 @@ int testapprun(instance_data_t *inst, int message)
 					dwt_setrxaftertxdelay(0);
                     //change to next state - wait to receive a message
                     inst->testAppState = TA_RXE_WAIT ;
+                    inst->test = 0;
 
                     dwt_setrxtimeout(0);
                     dwt_setpreambledetecttimeout(0);
@@ -660,7 +661,6 @@ int testapprun(instance_data_t *inst, int message)
 #if defined(DEBUG)
 		   printf("TA_RX_WAIT_DATA %d\n", message) ;
 #endif
-
             switch (message)
             {
 
