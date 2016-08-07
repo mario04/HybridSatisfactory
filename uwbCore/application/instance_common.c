@@ -1058,6 +1058,8 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
     //if we got a frame with a good CRC - RX OK
     if(rxd->event == DWT_SIG_RX_OKAY)
 	{
+//    	sprintf((char*)&dataseq[0], "%a");
+//    		uartWriteLineNoOS((char *) dataseq);
  		dw_event.rxLength = rxd->datalength;
 
 		//need to process the frame control bytes to figure out what type of frame we have received
@@ -1091,6 +1093,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 		//if Listener then just report the received frame to the instance (application)
 		if(rxd_event == DWT_SIG_RX_OKAY) //Process good/known frame types
 		{
+			instance_data[instance].test++;
 			uint16 sourceAddress = (((uint16)dw_event.msgu.frame[srcAddr_index+1]) << 8) + dw_event.msgu.frame[srcAddr_index];
 
 			if(instance_data[instance].mode != LISTENER)

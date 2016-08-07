@@ -419,6 +419,7 @@ typedef struct
 	int8 reportTO;
 
 	int dwIDLE; //set to 1 when the RST goes high after wake up (it is set in process_dwRSTn_irq)
+	int test;
 
 } instance_data_t ;
 
