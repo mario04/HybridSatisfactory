@@ -30,8 +30,8 @@ extern "C" {
 // once it receives a report or times out, before the next poll message is sent (before next ranging exchange is started).
 
 #define CORRECT_RANGE_BIAS  (1)     // Compensate for small bias due to uneven accumulator growth at close up high power
-#define REPORT_IMP (0) 				//Report messages implementation. Tag will receive the TOF value from anchor in the slot time
-#define UART_DEBUG (0)
+#define REPORT_IMP (1) 				//Report messages implementation. Tag will receive the TOF value from anchor in the slot time
+#define UART_DEBUG (1)
 
 #define ANCTOANCTWR (0) //if set to 1 then anchor to anchor TWR will be done in the last slot
 /******************************************************************************************************************
