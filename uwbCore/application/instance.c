@@ -734,17 +734,17 @@ int testapprun(instance_data_t *inst, int message)
                             case RTLS_DEMO_MSG_ANCH_POLL:
                             case RTLS_DEMO_MSG_TAG_POLL:
                             {
-            					inst->tagPollRxTime = dw_event->timeStamp ; //save Poll's Rx time
-								if(fcode == RTLS_DEMO_MSG_TAG_POLL) //got poll from Tag
-								{
-									inst->rangeNumA[srcAddr[0]&0x7] = messageData[POLL_RNUM]; //when anchor receives a poll, we need to remember the new range number
-								}
-								else //got poll from Anchor (initiator)
-								{
-									inst->rangeNumAAnc[tof_idx] = messageData[POLL_RNUM]; //when anchor receives poll from another anchor - save the range number
-								}
+				inst->tagPollRxTime = dw_event->timeStamp ; //save Poll's Rx time
+				if(fcode == RTLS_DEMO_MSG_TAG_POLL) //got poll from Tag
+				{
+					inst->rangeNumA[srcAddr[0]&0x7] = messageData[POLL_RNUM]; //when anchor receives a poll, we need to remember the new range number
+				}
+				else //got poll from Anchor (initiator)
+				{
+					inst->rangeNumAAnc[tof_idx] = messageData[POLL_RNUM]; //when anchor receives poll from another anchor - save the range number
+				}
 
-								if (A1_ANCHOR_ADDR == inst->instanceAddress16) //this is A1
+				if (A1_ANCHOR_ADDR == inst->instanceAddress16) //this is A1
                                 {
                                 	if(GATEWAY_ANCHOR_ADDR == (srcAddr[0] | ((uint32)(srcAddr[1] << 8)))) //poll is from A0
                                 	{
