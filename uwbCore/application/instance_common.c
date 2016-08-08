@@ -1093,7 +1093,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 		//if Listener then just report the received frame to the instance (application)
 		if(rxd_event == DWT_SIG_RX_OKAY) //Process good/known frame types
 		{
-			instance_data[instance].test++;
+
 			uint16 sourceAddress = (((uint16)dw_event.msgu.frame[srcAddr_index+1]) << 8) + dw_event.msgu.frame[srcAddr_index];
 
 			if(instance_data[instance].mode != LISTENER)
@@ -1158,6 +1158,8 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
 					case RTLS_DEMO_MSG_TAG_POLL:
 					{
+						instance_data[instance].test++;
+
 						if(instance_data[instance].mode == TAG) //tag should ignore any other Polls from tags
 						{
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
@@ -1191,6 +1193,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 					case RTLS_DEMO_MSG_ANCH_RESP:
 					case RTLS_DEMO_MSG_ANCH_RESP2:
 					{
+						instance_data[instance].test++;
 						//we are a tag
 					    if(instance_data[instance].mode == TAG)
 					    {
@@ -1287,7 +1290,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
 					case RTLS_DEMO_MSG_TAG_FINAL:
 					case RTLS_DEMO_MSG_ANCH_FINAL:
-
+						instance_data[instance].test++;
 						if(instance_data[instance].mode == TAG) //tag should ignore any other Final from anchors
 						{
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
