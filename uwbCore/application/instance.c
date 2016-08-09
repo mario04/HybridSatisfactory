@@ -446,7 +446,7 @@ int testapprun(instance_data_t *inst, int message)
         {
         	inst->msg_f.messageData[REPORT_RNUM] = inst->rangeNum;
         	inst->msg_f.messageData[FCODE] = RTLS_DEMO_MSG_ANCH_REPORT;
-            memcpy(&(inst->msg_f.messageData[TOFREP]), &inst->tof[inst->newRangeTagAddress & 0x7], 4);
+            memcpy(&(inst->msg_f.messageData[TOFREP]), &inst->tofArray[inst->shortAdd_idx], 4);
         	inst->psduLength = (TAG_POLL_MSG_LEN + FRAME_CRTL_AND_ADDRESS_S + FRAME_CRC);
         	inst->msg_f.seqNum = inst->frameSN++; //copy sequence number and then increment
         	inst->msg_f.sourceAddr[0] = inst->eui64[0];
@@ -897,10 +897,11 @@ int testapprun(instance_data_t *inst, int message)
                             case RTLS_DEMO_MSG_ANCH_REPORT:
                             {
 #if UART_DEBUG
-	                	sprintf((char*)&dataseq[0], "RXrep ");			
-#endif                  	uartWriteLineNoOS((char *) dataseq);
-                            	uint8 currentRangeNum = (messageData[REPORT_RNUM] + 1);
-                            	if(currentRangeNum == inst->rangeNum) //these are the previous ranges...
+	                	sprintf((char*)&dataseq[0], "RXrep ");
+	                	uartWriteLineNoOS((char *) dataseq);
+#endif
+                            	uint8 currentRangeNum = (messageData[REPORT_RNUM]);
+                            	if(currentRangeNum == inst->rangeNum) //We are in the same change of messagges 
 								{
 									//copy the ToF and put into array (array holds last 4 ToFs)
 									memcpy(&inst->tofArray[(srcAddr[0]&0x3)], &(messageData[TOFREP]), 4);
