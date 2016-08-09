@@ -1064,7 +1064,7 @@ int testapprun(instance_data_t *inst, int message)
 
 								instancesetantennadelays(); //this will update the antenna delay if it has changed
 					            instancesettxpower(); // configure TX power if it has changed
-#if REPORT_iMP
+#if REPORT_IMP
 					            inst->testAppState = TA_TXREPORT_WAIT_SEND;
 #else
 					            inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
