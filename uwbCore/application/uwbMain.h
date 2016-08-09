@@ -19,6 +19,9 @@
 #include "cmsis_os.h"
 #include "main.h"
 #include <stdio.h>
+
+#define TAG_DEVICE (1) // In order to programm the device.
+
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 osThreadId uwbInitTaskHandle;

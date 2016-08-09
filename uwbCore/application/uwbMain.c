@@ -41,16 +41,22 @@
 
 #define SWITCH_ON 			TRUE
 #define SWITCH_OFF 			FALSE
-
 #define BUTTON_0			FALSE
-
 #define TA_SW1_3			FALSE
-#define TA_SW1_4			TRUE		/* FALSE: Tag - TRUE: Anchor */
+
+
+#if TAG_DEVICE
+ 				#define TA_SW1_4			FALSE
+#else
+				#define TA_SW1_4			TRUE		/* FALSE: Tag - TRUE: Anchor */
+#endif
+
+//Address
 #define TA_SW1_5			FALSE 
 #define TA_SW1_6			TRUE
 #define TA_SW1_7			FALSE
-#define TA_SW1_8			FALSE
 
+#define TA_SW1_8			FALSE
 #define FASTRANGING 		SWITCH_OFF
 
 
@@ -444,13 +450,18 @@ int uwb_setup(void)
 
 	port_EnableEXT_IRQ(); //enable ScenSor IRQ before starting
 
-
+#if TAG_DEVICE
+	osThreadDef(uwbMainTask, UwbMainTask, osPriorityNormal, 0, 128); // 128
+#else
 	osThreadDef(uwbMainTask, UwbMainTask, osPriorityNormal, 0, 1024); // 128
-
+#endif
 	uwbMainTaskHandle = osThreadCreate(osThread(uwbMainTask), 0);
 
-
-	osThreadDef(uwbProcessInterruptTask, UwbProcessInterruptTask, osPriorityAboveNormal, 0, 1024); // 256
+#if TAG_DEVICE
+	osThreadDef(uwbProcessInterruptTask, UwbProcessInterruptTask, osPriorityAboveNormal, 0, 256); // 256
+#else
+	osThreadDef(uwbProcessInterruptTask, UwbProcessInterruptTask, osPriorityAboveNormal, 0, 1024); // 256	
+#endif
 	uwbProcessInterruptTaskHandle = osThreadCreate(osThread(uwbProcessInterruptTask), 0);
 
 
@@ -463,7 +474,8 @@ int uwb_setup(void)
 
 }
 
-void UwbMainTask(void const * argument) {
+void UwbMainTask(void const * argument) 
+{
 
 	UNUSED(argument);
 
@@ -479,7 +491,9 @@ void UwbMainTask(void const * argument) {
 		int monitor_local = instance_data[0].monitor ;
 		int txdiff = (portGetTickCnt() - instance_data[0].timeofTx);
 
-		osThreadYield();
+		#if TAG_DEVICE
+			osThreadYield();
+		#endif
 
 
 		instance_run();
@@ -565,7 +579,7 @@ void UwbMainTask(void const * argument) {
 						b++;
 					}
 
-					sprintf((char*)&dataseq[0], "A%d T%d: %3.2f m, TO: %d", ancaddr, toggle, rangetotag, instance_data[0].test);
+					sprintf((char*)&dataseq[0], "A%d T%d: %3.2f m", ancaddr, toggle, rangetotag);
 					uartWriteLineNoOS((char *) dataseq); //send some data
 
 					toggle++;

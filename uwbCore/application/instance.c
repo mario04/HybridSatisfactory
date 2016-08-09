@@ -56,6 +56,7 @@ void instanceconfigframeheader16(instance_data_t *inst)
 }
 
 
+
 int instancesenddlypacket(instance_data_t *inst, int delayedTx)
 {
     int result = 0;
@@ -190,7 +191,6 @@ int testapprun(instance_data_t *inst, int message)
 					dwt_setrxaftertxdelay(0);
                     //change to next state - wait to receive a message
                     inst->testAppState = TA_RXE_WAIT ;
-                    inst->test = 0;
 
                     dwt_setrxtimeout(0);
                     dwt_setpreambledetecttimeout(0);
