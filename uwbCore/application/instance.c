@@ -55,6 +55,7 @@ void instanceconfigframeheader16(instance_data_t *inst)
     inst->msg_f.seqNum = 0;
 }
 
+
 int instancesenddlypacket(instance_data_t *inst, int delayedTx)
 {
     int result = 0;
@@ -83,7 +84,7 @@ int instancesenddlypacket(instance_data_t *inst, int delayedTx)
 int instance_calcranges(uint32 *array, uint16 size, int reportRange, uint8* mask)
 {
 	int i;
-	int newRange = TOF_REPORT_NUL;
+    int newRange = TOF_REPORT_NUL;
 	int distance = 0;
 
 	for(i=0; i<size; i++)
@@ -997,7 +998,7 @@ int testapprun(instance_data_t *inst, int message)
 									printf("FinalRx Timestamp: %4.15e\n", convertdevicetimetosecu(dw_event.timeStamp));
 #endif
 */
-#if REMP_IMP == 0
+#if REPORT_IMP == 0
 									inst->delayedReplyTime = 0 ;
 #endif
 									// times measured at Tag extracted from the message buffer
