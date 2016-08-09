@@ -452,6 +452,7 @@ int testapprun(instance_data_t *inst, int message)
         	inst->msg_f.seqNum = inst->frameSN++; //copy sequence number and then increment
         	dwt_writetxdata(inst->psduLength, (uint8 *)  &inst->msg_f, 0) ;
         	inst->wait4ack = 0;
+            dwt_setrxaftertxdelay(0);
         	switch(inst->shortAdd_idx){
         		case GATEWAY_ANCHOR_ADDR&0x0003:
 					inst->delayedReplyTime = inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
@@ -493,6 +494,7 @@ int testapprun(instance_data_t *inst, int message)
 				}
 				else
 				{
+                    inst->delayedReplyTime = 0 ;
 					inst->testAppState = TA_TX_WAIT_CONF;                                               // wait confirmation
 					inst->previousState = TA_TXREPORT_WAIT_SEND;
 
@@ -576,6 +578,7 @@ int testapprun(instance_data_t *inst, int message)
                 }
 #if REPORT_IMP
                 else if(inst->previousState == TA_TXREPORT_WAIT_SEND){
+                    dwt_setrxtimeout(0);
                 	inst->testAppState = TA_RXE_WAIT ;
 #if UART_DEBUG
                 	sprintf((char*)&dataseq[0], "RepConf\n ");
