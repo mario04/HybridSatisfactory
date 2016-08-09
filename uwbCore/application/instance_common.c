@@ -1158,7 +1158,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
 					case RTLS_DEMO_MSG_TAG_POLL:
 					{
-						instance_data[instance].test++;
+						
 
 						if(instance_data[instance].mode == TAG) //tag should ignore any other Polls from tags
 						{
@@ -1193,7 +1193,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 					case RTLS_DEMO_MSG_ANCH_RESP:
 					case RTLS_DEMO_MSG_ANCH_RESP2:
 					{
-						instance_data[instance].test++;
+						
 						//we are a tag
 					    if(instance_data[instance].mode == TAG)
 					    {
@@ -1290,7 +1290,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
 					case RTLS_DEMO_MSG_TAG_FINAL:
 					case RTLS_DEMO_MSG_ANCH_FINAL:
-						instance_data[instance].test++;
+						
 						if(instance_data[instance].mode == TAG) //tag should ignore any other Final from anchors
 						{
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
@@ -1307,7 +1307,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
 							instance_data[instance].delayedReplyTime = dw_event.timeStamp32h;
 
-//							dw_event.type_pend = DWT_SIG_DW_IDLE;
+							//dw_event.type_pend = DWT_SIG_DW_IDLE;
 
 						}
 						break;
