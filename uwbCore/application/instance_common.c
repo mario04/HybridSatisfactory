@@ -14,7 +14,7 @@
 #include "deca_port.h"
 #include "deca_device_api.h"
 #include "deca_spi.h"
-
+#include "uart.h"
 #include "instance.h"
 
 // -------------------------------------------------------------------------------------------------------------------
@@ -1058,6 +1058,8 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
     //if we got a frame with a good CRC - RX OK
     if(rxd->event == DWT_SIG_RX_OKAY)
 	{
+//    	sprintf((char*)&dataseq[0], "%a");
+//    		uartWriteLineNoOS((char *) dataseq);
  		dw_event.rxLength = rxd->datalength;
 
 		//need to process the frame control bytes to figure out what type of frame we have received
@@ -1091,6 +1093,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 		//if Listener then just report the received frame to the instance (application)
 		if(rxd_event == DWT_SIG_RX_OKAY) //Process good/known frame types
 		{
+
 			uint16 sourceAddress = (((uint16)dw_event.msgu.frame[srcAddr_index+1]) << 8) + dw_event.msgu.frame[srcAddr_index];
 
 			if(instance_data[instance].mode != LISTENER)
@@ -1155,6 +1158,8 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
 					case RTLS_DEMO_MSG_TAG_POLL:
 					{
+						
+
 						if(instance_data[instance].mode == TAG) //tag should ignore any other Polls from tags
 						{
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
@@ -1188,6 +1193,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 					case RTLS_DEMO_MSG_ANCH_RESP:
 					case RTLS_DEMO_MSG_ANCH_RESP2:
 					{
+						
 						//we are a tag
 					    if(instance_data[instance].mode == TAG)
 					    {
@@ -1273,7 +1279,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 #if REPORT_IMP
  					case RTLS_DEMO_MSG_ANCH_REPORT:
  					{
- 						instance_data[instance].reportTO--; 
+ 						instance_data[instance].reportTO--;
  						instance_data[instance].rxRep[instance_data[instance].rangeNum]++;
  						dw_event.type_pend = tagrxreenableRep(sourceAddress); //reportTO decremented above...
  						instance_data[instance].rxReportMask |= (0x1 << (sourceAddress & 0x3));
@@ -1284,7 +1290,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
 					case RTLS_DEMO_MSG_TAG_FINAL:
 					case RTLS_DEMO_MSG_ANCH_FINAL:
-
+						
 						if(instance_data[instance].mode == TAG) //tag should ignore any other Final from anchors
 						{
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
@@ -1295,14 +1301,18 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 						}
 #if REPORT_IMP
 						else if(instance_data[instance].mode == ANCHOR){
-//							uint8 *frame = &dw_event.msgu.frame[0];
-//							memcpy(&instance_data[instance].msg_f.destAddr[0], &frame[srcAddr_index], ADDR_BYTE_SIZE_S);
+
+							//uint8 *frame = &dw_event.msgu.frame[0];
+							//memcpy(&instance_data[instance].msg_f.destAddr[0], &frame[srcAddr_index], ADDR_BYTE_SIZE_S);
+
 							instance_data[instance].delayedReplyTime = dw_event.timeStamp32h;
-//							dw_event.type_pend = DWT_SIG_DW_IDLE;
+
+							//dw_event.type_pend = DWT_SIG_DW_IDLE;
+
 						}
 						break;
 #endif
-					//if anchor fall into case below and process the frame
+//					//if anchor fall into case below and process the frame
 					default:  //process rx frame
 					{
 						if(instance_data[instance].mode == TAG) //tag should ignore any other Final from anchors
