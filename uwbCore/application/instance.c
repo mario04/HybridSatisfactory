@@ -443,6 +443,7 @@ int testapprun(instance_data_t *inst, int message)
 #if REPORT_IMP
         case TA_TXREPORT_WAIT_SEND:
         {
+
         	inst->msg_f.messageData[REPORT_RNUM] = inst->rangeNum;
         	inst->msg_f.messageData[FCODE] = RTLS_DEMO_MSG_ANCH_REPORT;
         	memcpy(&(inst->msg_f.messageData[TOFREP]), &inst->tof[inst->newRangeTagAddress & 0x7], 4);
@@ -1063,7 +1064,7 @@ int testapprun(instance_data_t *inst, int message)
 								instancesetantennadelays(); //this will update the antenna delay if it has changed
 					            instancesettxpower(); // configure TX power if it has changed
 
-#if REMP_IMP
+#if REPORT_IMP
 					             inst->testAppState = TA_TXREPORT_WAIT_SEND;
 #else
 					             inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
