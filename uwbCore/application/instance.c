@@ -446,6 +446,7 @@ int testapprun(instance_data_t *inst, int message)
         {
         	inst->msg_f.messageData[REPORT_RNUM] = inst->rangeNum;
         	inst->msg_f.messageData[FCODE] = RTLS_DEMO_MSG_ANCH_REPORT;
+            memcpy(&(inst->msg_f.messageData[TOFREP]), &inst->tof[inst->newRangeTagAddress & 0x7], 4);
         	inst->psduLength = (TAG_POLL_MSG_LEN + FRAME_CRTL_AND_ADDRESS_S + FRAME_CRC);
         	inst->msg_f.seqNum = inst->frameSN++; //copy sequence number and then increment
         	inst->msg_f.sourceAddr[0] = inst->eui64[0];
