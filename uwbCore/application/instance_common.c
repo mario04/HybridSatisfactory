@@ -1273,7 +1273,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 #if REPORT_IMP
  					case RTLS_DEMO_MSG_ANCH_REPORT:
  					{
- 						instance_data[instance].reportTO--;
+ 						instance_data[instance].reportTO--; 
  						instance_data[instance].rxRep[instance_data[instance].rangeNum]++;
  						dw_event.type_pend = tagrxreenableRep(sourceAddress); //reportTO decremented above...
  						instance_data[instance].rxReportMask |= (0x1 << (sourceAddress & 0x3));

@@ -390,10 +390,12 @@ int testapprun(instance_data_t *inst, int message)
 				{
             		inst->instToSleep = FALSE; // The ranging do not finish here, Wait for report messages, Wait for report messages..
             		inst->wait4ack = DWT_RESPONSE_EXPECTED; // Tag is waiting for report message.
-            		inst->rxRep[inst->rangeNum] = 0;	// Reset the number of responses
+            		inst->rxRep[inst->rangeNum] = 0;	// Reset the number of reports
             		inst->reportTO = MAX_ANCHOR_LIST_SIZE; // four reports are expected
             		dwt_setrxaftertxdelay((uint32)RX_RESPONSE1_TURNAROUND); // After this delay the first report message will be sent.
-            		dwt_setrxtimeout((uint16)inst->fwtoTime_sy * MAX_ANCHOR_LIST_SIZE);
+										// This will be a report message. So this time will be change after
+										// The message length of the report is of 17 bytes
+            		dwt_setrxtimeout((uint16)inst->fwtoTime_sy * MAX_ANCHOR_LIST_SIZE); // Again, this time is different.
 
             		inst->rxReportMask = 0;
 #if UART_DEBUG
@@ -450,6 +452,8 @@ int testapprun(instance_data_t *inst, int message)
         	inst->msg_f.sourceAddr[1] = inst->eui64[1];
         	dwt_writetxdata(inst->psduLength, (uint8 *)  &inst->msg_f, 0) ;
         	inst->wait4ack = 0;
+		/*Probably this implementation will be changed to something seem to the response message. the fixedReplyDealyAnc is for the response message.
+		So, probaby it is necessary to defined a new variable for the report message case*/
         	switch(inst->shortAdd_idx){
         		case GATEWAY_ANCHOR_ADDR&0x3:
 					inst->delayedReplyTime = inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
@@ -891,6 +895,9 @@ int testapprun(instance_data_t *inst, int message)
 #if REPORT_IMP
                             case RTLS_DEMO_MSG_ANCH_REPORT:
                             {
+#if UART_DEBUG
+	                	sprintf((char*)&dataseq[0], "RXrep ");			
+#endif                  	uartWriteLineNoOS((char *) dataseq);
                             	uint8 currentRangeNum = (messageData[REPORT_RNUM] + 1);
                             	if(currentRangeNum == inst->rangeNum) //these are the previous ranges...
 								{
