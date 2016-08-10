@@ -380,9 +380,11 @@ typedef struct
 
     //diagnostic counters/data, results and logging
     uint32 tof[MAX_TAG_LIST_SIZE]; //this is an array which holds last ToF from particular tag (ID 0-7)
+    uint32 tof_reported[MAX_TAG_LIST_SIZE]; // This is an array which holds last ToF from report message from a particular tag
 
     //this is an array which holds last ToF to each anchor it should
     uint32 tofArray[MAX_ANCHOR_LIST_SIZE]; //contain 4 ToF to 4 anchors all relating to same range number sequence
+    uint32 tofArray_reported[MAX_ANCHOR_LIST_SIZE];
 
     uint32 tofAnc[MAX_ANCHOR_LIST_SIZE]; //this is an array which holds last ToFs from particular anchors (0, 0-1, 0-2, 1-2)
 
@@ -401,6 +403,8 @@ typedef struct
     int newRangeTagAddress; //last 4 bytes of tag address - used for printing/range output display
     int newRangeTime;
 
+    int newReportRange;
+
     uint8 gatewayAnchor ; //set to TRUE = 1 if anchor address == GATEWAY_ANCHOR_ADDR
 
 	//event queue - used to store DW1000 events as they are processed by the dw_isr/callback functions
@@ -415,8 +419,10 @@ typedef struct
 	uint8 rxRespsIdx; //index into the array below (current tag (4bits)/seq number(4bits))
 	int8 rxResps[256];
 
+    uint8 rxRepIdx;
 	int8 rxRep[256];
 	int8 rxReportMask;
+    int8 rxReportMaskReport;
 	int8 reportTO;
 
 	int dwIDLE; //set to 1 when the RST goes high after wake up (it is set in process_dwRSTn_irq)
@@ -496,6 +502,7 @@ int instancenewrangeancadd(void);
 int instancenewrangetagadd(void);
 int instancenewrangepolltim(void);
 int instancenewrange(void);
+int instancenewrangeReport(void);
 int instancenewrangetim(void);
 
 uint64 convertmicrosectodevicetimeu (double microsecu);

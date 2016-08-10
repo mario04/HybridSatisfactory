@@ -316,6 +316,12 @@ int testapprun(instance_data_t *inst, int message)
 					inst->newRange = instance_calcranges(&inst->tofArray[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxResponseMask);
 					inst->rxResponseMaskReport = inst->rxResponseMask;
 					inst->rxResponseMask = 0;
+
+
+                    // inst->newReportRange = instance_calcranges(&inst->tofArray_reported[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxReportMask);
+                    // inst->rxReportMaskReport = inst->rxReportMask;
+                    // inst->rxReportMask = 0;
+
 					inst->newRangeTime = portGetTickCount() ;
                 }
 
@@ -392,7 +398,7 @@ int testapprun(instance_data_t *inst, int message)
 				{
             		inst->instToSleep = FALSE; // The ranging do not finish here
             		inst->wait4ack = DWT_RESPONSE_EXPECTED; // Tag is waiting for report message.
-            		inst->rxRep[inst->rangeNum] = 0;	// Reset the number of responses
+            		inst->rxRep[inst->rangeNum] = 0;	// Reset the number of reports
             		inst->reportTO = MAX_ANCHOR_LIST_SIZE; // four reports are expected
             		dwt_setrxaftertxdelay((uint32)RX_RESPONSE1_TURNAROUND); // After this delay the first report message will be sent.
             		dwt_setrxtimeout((uint16)inst->fwtoTime_sy * MAX_ANCHOR_LIST_SIZE);
@@ -906,13 +912,13 @@ int testapprun(instance_data_t *inst, int message)
                             	if(currentRangeNum == inst->rangeNum) //these are the previous ranges...
 								{
 									//copy the ToF and put into array (array holds last 4 ToFs)
-									memcpy(&inst->tofArray[(srcAddr[0]&0x3)], &(messageData[TOFREP]), 4);
+									memcpy(&inst->tofArray_reported[(srcAddr[0]&0x3)], &(messageData[TOFREP]), 4);
 
 									//check if the ToF is valid, this makes sure we only report valid ToFs
 									//e.g. consider the case of reception of response from anchor a1 (we are anchor a2)
 									//if a1 got a Poll with previous Range number but got no Final, then the response will have
 									//the correct range number but the range will be INVALID_TOF
-									if(inst->tofArray[(srcAddr[0]&0x3)] != INVALID_TOF)
+									if(inst->tofArray_reported[(srcAddr[0]&0x3)] != INVALID_TOF)
 									{
 										inst->rxReportMask |= (0x1 << (srcAddr[0]&0x3));
 									}
@@ -920,9 +926,9 @@ int testapprun(instance_data_t *inst, int message)
 								}
 								else
 								{
-									if(inst->tofArray[(srcAddr[0]&0x3)] != INVALID_TOF)
+									if(inst->tofArray_reported[(srcAddr[0]&0x3)] != INVALID_TOF)
 									{
-										inst->tofArray[(srcAddr[0]&0x3)] = INVALID_TOF;
+										inst->tofArray_reported[(srcAddr[0]&0x3)] = INVALID_TOF;
 									}
 								}
                             	if(dw_event->type_pend == DWT_SIG_RX_PENDING)
@@ -931,7 +937,7 @@ int testapprun(instance_data_t *inst, int message)
 									// stay in TA_RX_WAIT_DATA - receiver is already enabled.
 								}
                           								//DW1000 idle - all the reports are received
-							else //if(dw_event->type_pend == DWT_SIG_DW_IDLE)
+							    else //if(dw_event->type_pend == DWT_SIG_DW_IDLE)
 								{
 									/* Here is missing the report of the tofs values */
 									inst->testAppState = TA_TXE_WAIT ; //go to TA_TXE_WAIT first to check if it's sleep time

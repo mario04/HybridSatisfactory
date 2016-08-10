@@ -102,7 +102,7 @@ int main(void){
 	
 	MsgUwb = osMessageCreate(osMessageQ(MsgUwb), NULL);  // create msg queue
 
-	sThreadDef(Loc_thread, Locthread, osPriorityNormal, 0, 512);
+	osThreadDef(Loc_thread, Locthread, osPriorityNormal, 0, 512);
 	ThreadLocid = osThreadCreate(osThread(Loc_thread), NULL);
 #else
 	osThreadDef(uwbInitTask, UwbInitTask, osPriorityNormal, 0, 512); // 128

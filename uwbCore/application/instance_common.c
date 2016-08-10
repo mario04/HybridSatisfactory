@@ -166,6 +166,12 @@ int instancenewrange(void)
     instance_data[0].newRange = TOF_REPORT_NUL;
     return x;
 }
+int instancenewrangeReport(void)
+{
+    int x = instance_data[0].newReportRange;
+    instance_data[0].newReportRange = TOF_REPORT_NUL;
+    return x;
+}
 
 int instancenewrangeancadd(void)
 {
@@ -202,11 +208,13 @@ void instanceclearcounts(void)
     for(i=0; i<MAX_ANCHOR_LIST_SIZE; i++)
 	{
     	instance_data[instance].tofArray[i] = INVALID_TOF;
+        instance_data[instance].tofArray_reported[i] = INVALID_TOF;
 	}
 
     for(i=0; i<MAX_TAG_LIST_SIZE; i++)
 	{
 		instance_data[instance].tof[i] = INVALID_TOF;
+        instance_data[instance].tof_reported[i] = INVALID_TOF;
 	}
 
 } // end instanceclearcounts()

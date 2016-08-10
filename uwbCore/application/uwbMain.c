@@ -52,7 +52,7 @@
 #endif
 
 //Address
-#define TA_SW1_5			FALSE 
+#define TA_SW1_5			FALSE
 #define TA_SW1_6			TRUE
 #define TA_SW1_7			FALSE
 
@@ -530,7 +530,15 @@ void UwbMainTask(void const * argument)
 			instance_data[0].monitor = 0;
 		}
 
+		
+#if TAG_DEVICE
+		//rx = instancenewrangeReport();
 		rx = instancenewrange();
+#else
+
+		rx = instancenewrange();
+#endif
+
 
 //		if(rx != TOF_REPORT_NUL)
 //		{
