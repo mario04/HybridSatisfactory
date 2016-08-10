@@ -313,14 +313,14 @@ int testapprun(instance_data_t *inst, int message)
 					dwt_entersleep(); //go to sleep
 #endif
 					//DW1000 gone to sleep - report the received range
-					inst->newRange = instance_calcranges(&inst->tofArray[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxResponseMask);
-					inst->rxResponseMaskReport = inst->rxResponseMask;
-					inst->rxResponseMask = 0;
+					// inst->newRange = instance_calcranges(&inst->tofArray[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxResponseMask);
+					// inst->rxResponseMaskReport = inst->rxResponseMask;
+					// inst->rxResponseMask = 0;
 
 
-                    // inst->newReportRange = instance_calcranges(&inst->tofArray_reported[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxReportMask);
-                    // inst->rxReportMaskReport = inst->rxReportMask;
-                    // inst->rxReportMask = 0;
+                    inst->newReportRange = instance_calcranges(&inst->tofArray_reported[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxReportMask);
+                    inst->rxReportMaskReport = inst->rxReportMask;
+                    inst->rxReportMask = 0;
 
 					inst->newRangeTime = portGetTickCount() ;
                 }

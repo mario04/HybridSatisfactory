@@ -53,7 +53,7 @@
 
 //Address
 #define TA_SW1_5			FALSE
-#define TA_SW1_6			TRUE
+#define TA_SW1_6			FALSE
 #define TA_SW1_7			FALSE
 
 #define TA_SW1_8			FALSE
@@ -532,8 +532,8 @@ void UwbMainTask(void const * argument)
 
 		
 #if TAG_DEVICE
-		//rx = instancenewrangeReport();
-		rx = instancenewrange();
+		rx = instancenewrangeReport();
+		//rx = instancenewrange();
 #else
 
 		rx = instancenewrange();

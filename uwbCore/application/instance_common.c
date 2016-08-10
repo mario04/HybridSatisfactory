@@ -1287,6 +1287,13 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 #if REPORT_IMP
  					case RTLS_DEMO_MSG_ANCH_REPORT:
  					{
+                        if(instance_data[instance].mode == ANCHOR)
+                        {
+                            handle_error_unknownframe(dw_event);
+                            instance_data[instance].stopTimer = 1;
+                            instance_data[instance].rxMsgCount++;
+                            return;
+                        }
  						instance_data[instance].reportTO--;
  						instance_data[instance].rxRep[instance_data[instance].rangeNum]++;
  						dw_event.type_pend = tagrxreenableRep(sourceAddress); //reportTO decremented above...
