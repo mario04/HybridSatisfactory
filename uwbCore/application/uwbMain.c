@@ -53,8 +53,8 @@
 
 //Address
 #define TA_SW1_5			FALSE
-#define TA_SW1_6			FALSE
-#define TA_SW1_7			FALSE
+#define TA_SW1_6			TRUE
+#define TA_SW1_7			TRUE
 
 #define TA_SW1_8			FALSE
 #define FASTRANGING 		SWITCH_OFF
