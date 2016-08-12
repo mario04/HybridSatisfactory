@@ -30,7 +30,18 @@ extern "C" {
 // once it receives a report or times out, before the next poll message is sent (before next ranging exchange is started).
 
 #define CORRECT_RANGE_BIAS  (1)     // Compensate for small bias due to uneven accumulator growth at close up high power
-#define REPORT_IMP (1) 				//Report messages implementation. Tag will receive the TOF value from anchor in the slot time
+#define WATCH_REPORT    (1)
+#define REPORT_IMP      (1)              //Report messages implementation. Tag will receive the TOF value from anchor in the slot time
+// Anchor
+//     WATCH_REPORT = 0; REPORT_IMP = 0 
+//     WATCH_REPORT = 0; REPORT_IMP = 1
+
+// Tag
+//     WATCH_REPORT = 0; REPORT_IMP = 0
+//     WATCH_REPORT = 0; REPORT_IMP = 1
+//     WATCH_REPORT = 1; REPORT_IMP = 1
+    
+
 #define UART_DEBUG (0)
 
 #define ANCTOANCTWR (0) //if set to 1 then anchor to anchor TWR will be done in the last slot
@@ -133,6 +144,7 @@ extern "C" {
 #define RX_RESPONSE1_TURNAROUND (200) //takes about 200 us for the 1st response to come back (from A0)
 #define RX_RESPONSE1_TURNAROUND_6M81 (300) //takes about 100 us for response to come back
 #define RX_RESPONSE1_TURNAROUND_110K (300) //takes about 100 us for response to come back
+#define RX_REPORT1_TURNAROUND   (4000)
 
 //Tag will range to 3 or 4 anchors
 //Each ranging exchange will consist of minimum of 3 messages (Poll, Response, Final)
@@ -327,6 +339,7 @@ typedef struct
 	int fwtoTime_sy ;	//this is final message duration (longest out of ranging messages)
 	// The previous variable is not the final message duration. It is the duration of the response message plus some margin (700 us)
 	int fwtoTimeAnc_sy ;
+    int fwtoTime_syReport;
 	uint32 delayedReplyTime;		// delayed reply time of ranging-init/response/final message
 
     uint32 rxTimeouts ;

@@ -313,7 +313,7 @@ int testapprun(instance_data_t *inst, int message)
 					dwt_entersleep(); //go to sleep
 #endif
 					//DW1000 gone to sleep - report the received range
-#if REPORT_IMP
+#if WATCH_REPORT
                     inst->newReportRange = instance_calcranges(&inst->tofArray_reported[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxReportMask);
                     inst->rxReportMaskReport = inst->rxReportMask;
                     inst->rxReportMask = 0;
@@ -747,17 +747,17 @@ int testapprun(instance_data_t *inst, int message)
                             case RTLS_DEMO_MSG_ANCH_POLL:
                             case RTLS_DEMO_MSG_TAG_POLL:
                             {
-				inst->tagPollRxTime = dw_event->timeStamp ; //save Poll's Rx time
-				if(fcode == RTLS_DEMO_MSG_TAG_POLL) //got poll from Tag
-				{
-					inst->rangeNumA[srcAddr[0]&0x7] = messageData[POLL_RNUM]; //when anchor receives a poll, we need to remember the new range number
-				}
-				else //got poll from Anchor (initiator)
-				{
-					inst->rangeNumAAnc[tof_idx] = messageData[POLL_RNUM]; //when anchor receives poll from another anchor - save the range number
-				}
+                				inst->tagPollRxTime = dw_event->timeStamp ; //save Poll's Rx time
+                				if(fcode == RTLS_DEMO_MSG_TAG_POLL) //got poll from Tag
+                				{
+                					inst->rangeNumA[srcAddr[0]&0x7] = messageData[POLL_RNUM]; //when anchor receives a poll, we need to remember the new range number
+                				}
+                				else //got poll from Anchor (initiator)
+                				{
+                					inst->rangeNumAAnc[tof_idx] = messageData[POLL_RNUM]; //when anchor receives poll from another anchor - save the range number
+                				}
 
-				if (A1_ANCHOR_ADDR == inst->instanceAddress16) //this is A1
+                				if (A1_ANCHOR_ADDR == inst->instanceAddress16) //this is A1
                                 {
                                 	if(GATEWAY_ANCHOR_ADDR == (srcAddr[0] | ((uint32)(srcAddr[1] << 8)))) //poll is from A0
                                 	{
@@ -1174,9 +1174,11 @@ void instancesetreplydelay(int delayus) //delay in us
     int margin = 3000; //2000 symbols
     int respframe = 0;
     int respframe_sy = 0;
+    int respframe_syReport = 0;
 
 	//configure the rx delay receive delay time, it is dependent on the message length
 	float msgdatalen = 0;
+    float msgdatalenReport = 0;
 	float preamblelen = 0;
 	int sfdlen = 0;
 	int x = 0;
@@ -1185,10 +1187,12 @@ void instancesetreplydelay(int delayus) //delay in us
 	//Poll = 13, Response = 20, Final = 44 bytes
 	//msgdatalen = TAG_FINAL_MSG_LEN + FRAME_CRTL_AND_ADDRESS_S + FRAME_CRC;
 	msgdatalen = ANCH_RESPONSE_MSG_LEN + FRAME_CRTL_AND_ADDRESS_S + FRAME_CRC;
+    msgdatalenReport = ANCH_REPORT_MSG_LEN + FRAME_CRTL_AND_ADDRESS_S + FRAME_CRC;
 
 	x = (int) ceil(msgdatalen*8/330.0f);
 
 	msgdatalen = msgdatalen*8 + x*48;
+    msgdatalenReport = msgdatalenReport*8 + x*48;
 
 	//add some margin so we don't timeout too soon
 	margin = 0; //(TAG_FINAL_MSG_LEN - TAG_POLL_MSG_LEN);
@@ -1202,6 +1206,8 @@ void instancesetreplydelay(int delayus) //delay in us
     {
 		msgdatalen *= 8205.13f;
 		msgdatalen += 172308; // PHR length in nanoseconds
+        msgdatalenReport*= 8205.13f;
+        msgdatalenReport += 172308;
 
 		margin *= 8205.13f;
 
@@ -1248,6 +1254,7 @@ void instancesetreplydelay(int delayus) //delay in us
 	}
 
 	respframe_sy = (16 + (int)((preamblelen + ((msgdatalen + margin)/1000.0))/ 1.0256)) ;
+    respframe_syReport = (16 + (int)((preamblelen + ((msgdatalenReport + margin)/1000.0))/ 1.0256)) ;
 
 	//this is the delay used for the delayed transmit (when sending the response, and final messages)
 	instance_data[instance].pollTx2FinalTxDelay = convertmicrosectodevicetimeu (delayus);
@@ -1261,10 +1268,12 @@ void instancesetreplydelay(int delayus) //delay in us
 	//this delay depends on how quickly the tag can receive and process the message from previous anchor
 	//(and also the frame length of course)
 	respframe = (int)(preamblelen + (msgdatalen/1000.0)); //length of response frame (micro seconds)
+
 	if(instance_data[instance].configData.dataRate == DWT_BR_110K)
 	{
 		//set the frame wait timeout time - total time the frame takes in symbols
 		instance_data[instance].fwtoTime_sy = respframe_sy + RX_RESPONSE1_TURNAROUND_110K + 400; //add some margin because of the resp to resp RX turn on time
+        instance_data[instance].fwtoTime_syReport = respframe_syReport + RX_REPORT1_TURNAROUND +400;
 
 		instance_data[instance].fwtoTimeAnc_sy = respframe_sy; //add some margin so we don't timeout too soon
 		instance_data[instance].fixedReplyDelayAnc = convertmicrosectodevicetimeu (respframe + RX_RESPONSE1_TURNAROUND_110K);
