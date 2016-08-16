@@ -455,62 +455,33 @@ int testapprun(instance_data_t *inst, int message)
         case TA_TXREPORT_WAIT_SEND:
         {
 
-        	inst->msg_f.messageData[REPORT_RNUM] = inst->rangeNum;
-        	inst->msg_f.messageData[FCODE] = RTLS_DEMO_MSG_ANCH_REPORT;
+            uint8 flagEvent;
         	memcpy(&(inst->msg_f.messageData[TOFREP]), &inst->tofArray[inst->shortAdd_idx], 4);
-        	inst->psduLength = (ANCH_REPORT_MSG_LEN + FRAME_CRTL_AND_ADDRESS_S + FRAME_CRC);
-        	inst->msg_f.seqNum = inst->frameSN++; //copy sequence number and then increment
-        	dwt_writetxdata(inst->psduLength, (uint8 *)  &inst->msg_f, 0) ;
-        	inst->wait4ack = 0;
-            dwt_setrxaftertxdelay(0);
-        	switch(inst->shortAdd_idx){
-        		case GATEWAY_ANCHOR_ADDR&0x0003:
-					inst->delayedReplyTime = inst->delayedReplyTime + (inst->fixedReplyDelayAnc>>8);
-					break;
+            dwt_writetxfctrl(inst->psduLength, 0);
+            dwt_writetxdata(inst->psduLength, (uint8 *)  &inst->msg_f, 0) ;
 
-        		case A1_ANCHOR_ADDR&0x0003:
-					inst->delayedReplyTime = inst->delayedReplyTime + 2*(inst->fixedReplyDelayAnc>>8);
-					break;
+        	flagEvent = anctxorrxreenableReport(instance_data[instance].instanceAddress16);
 
-        		case A2_ANCHOR_ADDR&0x0003:
-					inst->delayedReplyTime = inst->delayedReplyTime + 3*(inst->fixedReplyDelayAnc>>8);
-					break;
+            if(flagEvent == DWT_SIG_TX_PENDING)
+            {
+                inst->testAppState = TA_TX_WAIT_CONF;                // wait confirmation
+                inst->previousState = TA_TXREPORT_WAIT_SEND ;    //wait for TX confirmation of sent response
+            }
+            //already re-enabled the receiver
+            else if (flagEvent == DWT_SIG_RX_PENDING)
+            {
+                //stay in RX wait for next frame...
+                //RX is already enabled...
+                inst->testAppState = TA_RX_WAIT_DATA ;              // wait for next frame
+            }
+            else //the DW1000 is idle (re-enable from the application level)
+            {
+                //stay in RX wait for next frame...
+                inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
+            }
 
-        		case A3_ANCHOR_ADDR&0x0003:
-					inst->delayedReplyTime = inst->delayedReplyTime + 4*(inst->fixedReplyDelayAnc>>8);
-					break;
-        		default:
-        			sprintf((char*)&dataseq[0], "Error...\n ");
-        			uartWriteLineNoOS((char *) dataseq); //send some data
-        			break;
-        	}
+        }
 
-        	if(instancesenddlypacket(inst, DWT_START_TX_DELAYED))
-				{
-					// initiate the re-transmission
-					if(inst->mode == TAG)
-					{
-						inst->testAppState = TA_TXE_WAIT ; //go to TA_TXE_WAIT first to check if it's sleep time
-						inst->nextState = TA_TXPOLL_WAIT_SEND ;
-					}
-					else
-					{
-						//A0 - failed to send Final
-						//A1 - failed to send Final
-						//go back to RX and behave as anchor
-						//instance_backtoanchor(inst);
-					}
-					break; //exit this switch case...
-				}
-				else
-				{
-                    inst->delayedReplyTime = 0 ;
-					inst->testAppState = TA_TX_WAIT_CONF;                                               // wait confirmation
-					inst->previousState = TA_TXREPORT_WAIT_SEND;
-
-				}
-
-        	}
         	break;
 #endif
         case TA_TX_WAIT_CONF :
@@ -588,7 +559,6 @@ int testapprun(instance_data_t *inst, int message)
                 }
 #if REPORT_IMP
                 else if(inst->previousState == TA_TXREPORT_WAIT_SEND){
-                    dwt_setrxtimeout(0);
                 	inst->testAppState = TA_RXE_WAIT ;
 #if UART_DEBUG
                 	sprintf((char*)&dataseq[0], "RepConf\n ");
