@@ -460,7 +460,7 @@ int testapprun(instance_data_t *inst, int message)
             dwt_writetxfctrl(inst->psduLength, 0);
             dwt_writetxdata(inst->psduLength, (uint8 *)  &inst->msg_f, 0) ;
 
-        	flagEvent = anctxorrxreenableReport(instance_data[instance].instanceAddress16);
+        	flagEvent = anctxorrxreenableReport(inst->instanceAddress16);
 
             if(flagEvent == DWT_SIG_TX_PENDING)
             {
