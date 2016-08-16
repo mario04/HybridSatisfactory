@@ -402,8 +402,10 @@ int testapprun(instance_data_t *inst, int message)
             		inst->wait4ack = DWT_RESPONSE_EXPECTED; // Tag is waiting for report message.
             		inst->rxRep[inst->rangeNum] = 0;	// Reset the number of reports
             		inst->reportTO = MAX_ANCHOR_LIST_SIZE; // four reports are expected
-            		dwt_setrxaftertxdelay((uint32)RX_RESPONSE1_TURNAROUND); // After this delay the first report message will be sent.
-            		dwt_setrxtimeout((uint16)inst->fwtoTime_sy * MAX_ANCHOR_LIST_SIZE);
+            		// dwt_setrxaftertxdelay((uint32)RX_RESPONSE1_TURNAROUND); // After this delay the first report message will be sent.
+            		// dwt_setrxtimeout((uint16)inst->fwtoTime_sy * MAX_ANCHOR_LIST_SIZE);
+                    dwt_setrxaftertxdelay((uint32)RX_RESPONSE1_TURNAROUND); // After this delay the first report message will be sent.
+                    dwt_setrxtimeout((uint16)inst->fwtoTime_sy * MAX_ANCHOR_LIST_SIZE);
 
             		inst->rxReportMask = 0;
 #if UART_DEBUG
