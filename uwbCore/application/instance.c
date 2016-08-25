@@ -170,6 +170,7 @@ int testapprun(instance_data_t *inst, int message)
                 break;
                 case ANCHOR:
                 {
+                    inst->test = 0;
                     memcpy(inst->eui64, &inst->instanceAddress16, ADDR_BYTE_SIZE_S);
                     dwt_seteui(inst->eui64);
 
@@ -461,9 +462,8 @@ int testapprun(instance_data_t *inst, int message)
         	memcpy(&(inst->msg_f.messageData[TOFREP]), &inst->tofArray[inst->shortAdd_idx], 4);
             dwt_writetxfctrl(inst->psduLength, 0);
             dwt_writetxdata(inst->psduLength, (uint8 *)  &inst->msg_f, 0) ;
-            inst->delayedReplyTime += (inst->fixedReplyDelayAnc >> 8);
         	flagEvent = anctxorrxreenableReport(inst->instanceAddress16);
-
+            inst->test++;
             if(flagEvent == DWT_SIG_TX_PENDING)
             {
                 inst->testAppState = TA_TX_WAIT_CONF;                // wait confirmation
@@ -477,6 +477,7 @@ int testapprun(instance_data_t *inst, int message)
                 //stay in RX wait for next frame...
                 //RX is already enabled...
                 inst->testAppState = TA_RX_WAIT_DATA ;
+                    
 
                             // wait for next frame
             }
@@ -484,16 +485,32 @@ int testapprun(instance_data_t *inst, int message)
             {
                 //stay in RX wait for next frame...
                 inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
+                
 
             }
-//#if REPORT_IMP
-//            instancesetantennadelays(); //this will update the antenna delay if it has changed
- //           instancesettxpower(); // configure TX power if it has changed
-//#endif
+           instancesetantennadelays(); //this will update the antenna delay if it has changed
+           instancesettxpower(); // configure TX power if it has changed
 
         }
 
         	break;
+        case TA_REPORT_END:
+        {
+            inst->delayedReplyTime = 0;
+            if(inst->rxRep[inst->rxRepIdx] >= 0)
+            {
+                inst->rxRep[inst->rxRepIdx] = -1 * inst->rxRep[inst->rxRepIdx];
+                if(inst->rxRep[inst->rxRepIdx] == 0) //as A0 will have this as 0 when ranging to A1
+                    inst->rxRep[inst->rxRepIdx] = -1 ;
+            }
+            inst->done = INST_NOT_DONE_YET;
+            inst->wait4ack = 0;
+            inst->testAppState = TA_RXE_WAIT ;
+
+
+        }
+        break;
+
 #endif
         case TA_TX_WAIT_CONF :
 #if defined(DEBUG)
@@ -950,6 +967,7 @@ int testapprun(instance_data_t *inst, int message)
                             case RTLS_DEMO_MSG_ANCH_FINAL:
                             case RTLS_DEMO_MSG_TAG_FINAL:
                             {
+                                
                                 int64 Rb, Da, Ra, Db ;
                                 uint64 tagFinalTxTime  = 0;
                                 uint64 tagFinalRxTime  = 0;
@@ -1036,6 +1054,7 @@ int testapprun(instance_data_t *inst, int message)
 								//tag to anchor ranging
 								if(RTLS_DEMO_MSG_TAG_FINAL == fcode)
 								{
+
 									inst->newRangeTagAddress = srcAddr[0] + ((uint16) srcAddr[1] << 8);
 									//time-of-flight
 									inst->tof[inst->newRangeTagAddress & 0x7] = tof;
@@ -1068,15 +1087,16 @@ int testapprun(instance_data_t *inst, int message)
 					            		inst->rxResps[inst->rxRespsIdx] = -1 ;
 					            }
 
-                                instancesetantennadelays(); //this will update the antenna delay if it has changed
-                                instancesettxpower(); // configure TX power if it has changed
+                                // instancesetantennadelays(); //this will update the antenna delay if it has changed
+                                // instancesettxpower(); // configure TX power if it has changed
 								
 
 #if REPORT_IMP
 					            inst->testAppState = TA_TXREPORT_WAIT_SEND;
+
 #else
-                                // instancesetantennadelays(); //this will update the antenna delay if it has changed
-                                // instancesettxpower(); // configure TX power if it has changed
+                                instancesetantennadelays(); //this will update the antenna delay if it has changed
+                                instancesettxpower(); // configure TX power if it has changed
 					            inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
 #endif
                             }
@@ -1266,7 +1286,6 @@ void instancesetreplydelay(int delayus) //delay in us
 	//this delay depends on how quickly the tag can receive and process the message from previous anchor
 	//(and also the frame length of course)
 	respframe = (int)(preamblelen + (msgdatalen/1000.0)); //length of response frame (micro seconds)
-
 	if(instance_data[instance].configData.dataRate == DWT_BR_110K)
 	{
 		//set the frame wait timeout time - total time the frame takes in symbols
@@ -1286,6 +1305,7 @@ void instancesetreplydelay(int delayus) //delay in us
 
 		instance_data[instance].fwtoTimeAnc_sy =  respframe_sy;
 		instance_data[instance].fixedReplyDelayAnc = convertmicrosectodevicetimeu (respframe + RX_RESPONSE1_TURNAROUND_6M81);
+
 		instance_data[instance].fixedReplyDelayAncP = (uint32) (((uint64) convertmicrosectodevicetimeu (preamblelen)) >> 8) + 16;
 
 		instance_data[instance].ancRespRxDelay = RX_RESPONSE1_TURNAROUND_6M81 ;

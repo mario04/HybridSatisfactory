@@ -30,7 +30,7 @@ extern "C" {
 // once it receives a report or times out, before the next poll message is sent (before next ranging exchange is started).
 
 #define CORRECT_RANGE_BIAS  (1)     // Compensate for small bias due to uneven accumulator growth at close up high power
-#define WATCH_REPORT    (0)
+#define WATCH_REPORT    (1)
 #define REPORT_IMP      (1)              //Report messages implementation. Tag will receive the TOF value from anchor in the slot time
 // Anchor
 //     WATCH_REPORT = 0; REPORT_IMP = 0 
@@ -182,7 +182,8 @@ typedef enum inst_states
     TA_TXRESPONSE_SENT_POLLRX,    //10
     TA_TXRESPONSE_SENT_RESPRX,    //11
     TA_TXRESPONSE_SENT_TORX,	//12
-	TA_TXREPORT_WAIT_SEND		//13
+	TA_TXREPORT_WAIT_SEND,		//13
+    TA_REPORT_END
 
 } INST_STATES;
 
@@ -437,6 +438,7 @@ typedef struct
 	int8 rxReportMask;
     int8 rxReportMaskReport;
 	int8 reportTO;
+    int8 test;
 
 	int dwIDLE; //set to 1 when the RST goes high after wake up (it is set in process_dwRSTn_irq)
 
