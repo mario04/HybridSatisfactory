@@ -545,6 +545,7 @@ void inst_processrxtimeout(instance_data_t *inst)
         }
         else if (inst->previousState == TA_TXFINAL_WAIT_SEND) //got here from main (error sending final - handle as timeout)
         {
+
         	dwt_forcetrxoff();	//this will clear all events
        		inst->instToSleep = TRUE ;
        		// initiate the re-transmission of the poll that was not responded to
@@ -705,6 +706,7 @@ uint8 tagrxreenableRep(uint16 sourceAddress){
 				if(instance_data[instance].reportTO > 0) //can get here as result of error frame so need to check
 				{
 					dwt_setrxtimeout((uint16)instance_data[instance].fwtoTime_sy * instance_data[instance].reportTO); //reconfigure the timeout
+                    // Compute the correct value for the report message.
 					dwt_rxenable(DWT_START_RX_IMMEDIATE) ;
 					type_pend = DWT_SIG_RX_PENDING ;
 				}
@@ -776,6 +778,7 @@ void ancenablerx(void)
 	dwt_setdelayedtrxtime(instance_data[instance].delayedReplyTime - instance_data[instance].fixedReplyDelayAncP) ;
 	if(dwt_rxenable(DWT_START_RX_DELAYED)) //delayed rx
 	{
+
 		//if the delayed RX failed - time has passed - do immediate enable
 		//led_on(LED_PC9);
 		dwt_setrxtimeout((uint16)instance_data[instance].fwtoTimeAnc_sy*2); //reconfigure the timeout before enable
@@ -910,6 +913,7 @@ uint8 anctxorrxreenableReport(uint16 sourceAddress)
             instance_data[instance].delayedReplyTime += 2*(instance_data[instance].fixedReplyDelayAnc >> 8); //to take into account W4R
             ancenablerx();
             type_pend = DWT_SIG_RX_PENDING ;
+
         }
         else
         {
@@ -917,6 +921,7 @@ uint8 anctxorrxreenableReport(uint16 sourceAddress)
             type_pend = DWT_SIG_TX_PENDING ; // exit this interrupt and notify the application/instance that TX is in progress.
             instance_data[instance].timeofTx = portGetTickCnt();
             instance_data[instance].monitor = 1;
+
         }
         //led_off(LED_PC9);
     }
@@ -1316,13 +1321,15 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 							memcpy(&(instance_data[instance].msg_f.messageData[index]), rxTimeStamp, 5);
 						}
 						else //normal anchor mode
-						{
+						 {
 							//got a response... (check if we got a Poll with the same range number as in this response)
 							if(RTLS_DEMO_MSG_ANCH_RESP == dw_event.msgu.frame[fcode_index])
 							{
+
 								if((instance_data[instance].rxResps[instance_data[instance].rxRespsIdx] >= 0) //we got the poll else ignore this response
 									&& (instance_data[instance].responseTO > 0)	) //if responseTO == 0 we have already received all of the responses - meaning should not be here => error
 								{
+
 									instance_data[instance].rxResps[instance_data[instance].rxRespsIdx]++; //increment the number of responses received
 									instance_data[instance].responseTO--;
 
@@ -1375,17 +1382,37 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 #if REPORT_IMP
  					case RTLS_DEMO_MSG_ANCH_REPORT:
  					{
-                        if(instance_data[instance].mode == ANCHOR)
-                        {
-                            handle_error_unknownframe(dw_event);
-                            instance_data[instance].stopTimer = 1;
-                            instance_data[instance].rxMsgCount++;
-                            return;
+                       
+                        if(instance_data[instance].mode == TAG){
+     						instance_data[instance].reportTO--;
+     						instance_data[instance].rxRep[instance_data[instance].rangeNum]++;
+     						dw_event.type_pend = tagrxreenableRep(sourceAddress); //reportTO decremented above...
+     						instance_data[instance].rxReportMask |= (0x1 << (sourceAddress & 0x3));
                         }
- 						instance_data[instance].reportTO--;
- 						instance_data[instance].rxRep[instance_data[instance].rangeNum]++;
- 						dw_event.type_pend = tagrxreenableRep(sourceAddress); //reportTO decremented above...
- 						instance_data[instance].rxReportMask |= (0x1 << (sourceAddress & 0x3));
+                        // else if(instance_data[instance].mode == ANCHOR){
+
+                        //     if((instance_data[instance].rxRep[instance_data[instance].rxRepIdx] >= 0) //we got the poll else ignore this response
+                        //         && (instance_data[instance].reportTO > 0) ) //if responseTO == 0 we have already received all of the responses - meaning should not be here => error
+                        //     {
+
+                        //         instance_data[instance].rxRep[instance_data[instance].rxRepIdx]++; //increment the number of responses received
+                        //         instance_data[instance].reportTO--;
+
+                        //         //send a response or re-enable rx
+                        //         dw_event.type_pend = anctxorrxreenableReport(instance_data[instance].instanceAddress16);
+                        //         //dw_event.type_pend = anctxorrxreenable(sourceAddress, 4+0);
+                        //     }
+                        //     else //like a timeout (error) ...
+                        //     {
+                        //         //led_on(LED_PC9);
+                        //         //send a response or re-enable rx
+                        //         dwt_setrxtimeout(0); //reconfigure the timeout
+                        //         dwt_rxenable(DWT_START_RX_IMMEDIATE) ;
+                        //         dw_event.type_pend = DWT_SIG_RX_PENDING ;
+                        //         //led_off(LED_PC9);
+                        //     }
+                            
+                        // }
 
  					}
  					break;

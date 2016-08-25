@@ -402,10 +402,12 @@ int testapprun(instance_data_t *inst, int message)
             		inst->wait4ack = DWT_RESPONSE_EXPECTED; // Tag is waiting for report message.
             		inst->rxRep[inst->rangeNum] = 0;	// Reset the number of reports
             		inst->reportTO = MAX_ANCHOR_LIST_SIZE; // four reports are expected
-            		// dwt_setrxaftertxdelay((uint32)RX_RESPONSE1_TURNAROUND); // After this delay the first report message will be sent.
-            		// dwt_setrxtimeout((uint16)inst->fwtoTime_sy * MAX_ANCHOR_LIST_SIZE);
-                    dwt_setrxaftertxdelay((uint32)RX_RESPONSE1_TURNAROUND); // After this delay the first report message will be sent.
-                    dwt_setrxtimeout((uint16)inst->fwtoTime_sy * MAX_ANCHOR_LIST_SIZE);
+            		dwt_setrxaftertxdelay((uint32)RX_RESPONSE1_TURNAROUND); // After this delay the first report message will be sent.
+            		dwt_setrxtimeout((uint16)inst->fwtoTime_sy * MAX_ANCHOR_LIST_SIZE);
+                    // This value correspond to the response message. Put the value for the report message. (Something similar)
+                    // dwt_setrxaftertxdelay(0); 
+                    // dwt_setrxtimeout(0);
+
 
             		inst->rxReportMask = 0;
 #if UART_DEBUG
@@ -459,26 +461,35 @@ int testapprun(instance_data_t *inst, int message)
         	memcpy(&(inst->msg_f.messageData[TOFREP]), &inst->tofArray[inst->shortAdd_idx], 4);
             dwt_writetxfctrl(inst->psduLength, 0);
             dwt_writetxdata(inst->psduLength, (uint8 *)  &inst->msg_f, 0) ;
-
+            inst->delayedReplyTime += (inst->fixedReplyDelayAnc >> 8);
         	flagEvent = anctxorrxreenableReport(inst->instanceAddress16);
 
             if(flagEvent == DWT_SIG_TX_PENDING)
             {
                 inst->testAppState = TA_TX_WAIT_CONF;                // wait confirmation
                 inst->previousState = TA_TXREPORT_WAIT_SEND ;    //wait for TX confirmation of sent response
+                
+
             }
             //already re-enabled the receiver
             else if (flagEvent == DWT_SIG_RX_PENDING)
             {
                 //stay in RX wait for next frame...
                 //RX is already enabled...
-                inst->testAppState = TA_RX_WAIT_DATA ;              // wait for next frame
+                inst->testAppState = TA_RX_WAIT_DATA ;
+
+                            // wait for next frame
             }
             else //the DW1000 is idle (re-enable from the application level)
             {
                 //stay in RX wait for next frame...
                 inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
+
             }
+//#if REPORT_IMP
+//            instancesetantennadelays(); //this will update the antenna delay if it has changed
+ //           instancesettxpower(); // configure TX power if it has changed
+//#endif
 
         }
 
@@ -526,6 +537,7 @@ int testapprun(instance_data_t *inst, int message)
                     {
 #if REPORT_IMP
                     	inst->testAppState = TA_RXE_WAIT;
+
 #if UART_DEBUG
                     	sprintf((char *)&dataseq[0], "RepRXEW \n");
                     	uartWriteLineNoOS((char *) dataseq);
@@ -560,6 +572,7 @@ int testapprun(instance_data_t *inst, int message)
 #if REPORT_IMP
                 else if(inst->previousState == TA_TXREPORT_WAIT_SEND){
                 	inst->testAppState = TA_RXE_WAIT ;
+
 #if UART_DEBUG
                 	sprintf((char*)&dataseq[0], "RepConf\n ");
                 	uartWriteLineNoOS((char *) dataseq);
@@ -883,6 +896,29 @@ int testapprun(instance_data_t *inst, int message)
                             	uartWriteLineNoOS((char *) dataseq);
 #endif
                             	uint8 currentRangeNum = (messageData[REPORT_RNUM]);
+                                if(dw_event->type_pend == DWT_SIG_TX_PENDING)
+                                {
+                                    inst->testAppState = TA_TX_WAIT_CONF;                // wait confirmation
+                                    inst->previousState = TA_TXREPORT_WAIT_SEND ;    //wait for TX confirmation of sent response
+                                    
+                                }
+                                else if(dw_event->type_pend == DWT_SIG_RX_PENDING) //if timed out and back in receive then don't process as timeout
+                                {
+                                    
+                                }
+                                else{
+                                    if(TAG == inst->mode)
+                                    {
+                                        inst->testAppState = TA_TXE_WAIT ; //go to TA_TXE_WAIT first to check if it's sleep time
+                                        inst->nextState = TA_TXPOLL_WAIT_SEND ;
+                                        inst->instToSleep = TRUE;
+                                    }
+                                    else
+                                    {
+                                        instance_backtoanchor(inst);
+                                    }
+                                }
+
                             	if(currentRangeNum == inst->rangeNum) //these are the previous ranges...
 								{
 									//copy the ToF and put into array (array holds last 4 ToFs)
@@ -905,20 +941,7 @@ int testapprun(instance_data_t *inst, int message)
 										inst->tofArray_reported[(srcAddr[0]&0x3)] = INVALID_TOF;
 									}
 								}
-                            	if(dw_event->type_pend == DWT_SIG_RX_PENDING)
-								{
-
-									// stay in TA_RX_WAIT_DATA - receiver is already enabled.
-								}
-                          								//DW1000 idle - all the reports are received
-							    else //if(dw_event->type_pend == DWT_SIG_DW_IDLE)
-								{
-									/* Here is missing the report of the tofs values */
-									inst->testAppState = TA_TXE_WAIT ; //go to TA_TXE_WAIT first to check if it's sleep time
-									inst->nextState = TA_TXPOLL_WAIT_SEND ;
-									inst->instToSleep = TRUE;
-
-								}
+                            	
                             }
                             break;
 #endif
@@ -1045,13 +1068,16 @@ int testapprun(instance_data_t *inst, int message)
 					            		inst->rxResps[inst->rxRespsIdx] = -1 ;
 					            }
 
-								instancesetantennadelays(); //this will update the antenna delay if it has changed
-					            instancesettxpower(); // configure TX power if it has changed
+                                instancesetantennadelays(); //this will update the antenna delay if it has changed
+                                instancesettxpower(); // configure TX power if it has changed
+								
 
 #if REPORT_IMP
-					             inst->testAppState = TA_TXREPORT_WAIT_SEND;
+					            inst->testAppState = TA_TXREPORT_WAIT_SEND;
 #else
-					             inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
+                                // instancesetantennadelays(); //this will update the antenna delay if it has changed
+                                // instancesettxpower(); // configure TX power if it has changed
+					            inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
 #endif
                             }
                             break; //RTLS_DEMO_MSG_TAG_FINAL
