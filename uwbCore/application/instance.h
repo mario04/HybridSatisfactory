@@ -30,7 +30,7 @@ extern "C" {
 // once it receives a report or times out, before the next poll message is sent (before next ranging exchange is started).
 
 #define CORRECT_RANGE_BIAS  (1)     // Compensate for small bias due to uneven accumulator growth at close up high power
-#define WATCH_REPORT    (1)
+#define WATCH_REPORT    (0)         // Send data for serial port and show the TOF value
 #define REPORT_IMP      (1)              //Report messages implementation. Tag will receive the TOF value from anchor in the slot time
 // Anchor
 //     WATCH_REPORT = 0; REPORT_IMP = 0 
@@ -42,7 +42,7 @@ extern "C" {
 //     WATCH_REPORT = 1; REPORT_IMP = 1
     
 
-#define UART_DEBUG (0)
+#define UART_DEBUG (0)              // In order to see in which sections code the execution flow.
 
 #define ANCTOANCTWR (0) //if set to 1 then anchor to anchor TWR will be done in the last slot
 /******************************************************************************************************************
@@ -50,6 +50,7 @@ extern "C" {
 *******************************************************************************************************************/
 
 #define NUM_INST            1
+#define NUM_COORD           3
 #define SPEED_OF_LIGHT      (299702547.0)     // in m/s in air
 #define MASK_40BIT			(0x00FFFFFFFFFF)  // DW1000 counter is 40 bits
 #define MASK_TXDTS			(0x00FFFFFFFE00)  //The TX timestamp will snap to 8 ns resolution - mask lower 9 bits.
@@ -160,14 +161,14 @@ typedef enum instanceModes{LISTENER, TAG, ANCHOR, ANCHOR_RNG, NUM_MODES} INST_MO
 //Anchor_Rng = the anchor (assumes a tag function) and ranges to another anchor - used in Anchor to Anchor TWR for auto positioning function
 
 #define TOF_REPORT_NUL 0
-#define TOF_REPORT_T2A 1
+#define TOF_REPORT_T2A 1    // This is for report to the serial port the results of ranging.
 #define TOF_REPORT_A2A 2
 
 #define INVALID_TOF (0xABCDFFFF)
 
 typedef enum inst_states
 {
-    TA_INIT, //0
+    TA_INIT,                    //0
 
     TA_TXE_WAIT,                //1 - state in which the instance will enter sleep (if ranging finished) or proceed to transmit a message
     TA_TXPOLL_WAIT_SEND,        //2 - configuration and sending of Poll message
@@ -178,9 +179,9 @@ typedef enum inst_states
     TA_RXE_WAIT,                //7
     TA_RX_WAIT_DATA,            //8
 
-    TA_SLEEP_DONE,               //9
-    TA_TXRESPONSE_SENT_POLLRX,    //10
-    TA_TXRESPONSE_SENT_RESPRX,    //11
+    TA_SLEEP_DONE,              //9
+    TA_TXRESPONSE_SENT_POLLRX,  //10
+    TA_TXRESPONSE_SENT_RESPRX,  //11
     TA_TXRESPONSE_SENT_TORX,	//12
 	TA_TXREPORT_WAIT_SEND,		//13
     TA_REPORT_END
@@ -334,6 +335,8 @@ typedef struct
 	uint64 pollTx2FinalTxDelay ; //this is delay from Poll Tx time to Final Tx time in DW1000 units (40-bit)
 	uint64 pollTx2FinalTxDelayAnc ; //this is delay from Poll Tx time to Final Tx time in DW1000 units (40-bit) for Anchor to Anchor ranging
 	uint64 fixedReplyDelayAnc ;
+    uint64 fixedReportDelayAnc ;
+
 	uint32 fixedReplyDelayAncP ;
 	int ancRespRxDelay ;
 
@@ -341,6 +344,7 @@ typedef struct
 	// The previous variable is not the final message duration. It is the duration of the response message plus some margin (700 us)
 	int fwtoTimeAnc_sy ;
     int fwtoTime_syReport;
+    int fwtoTimeAnc_syReport;
 	uint32 delayedReplyTime;		// delayed reply time of ranging-init/response/final message
 
     uint32 rxTimeouts ;
@@ -439,6 +443,7 @@ typedef struct
     int8 rxReportMaskReport;
 	int8 reportTO;
     int8 test;
+    double anch_pos_estimation[NUM_COORD]; // This must be double?? see the locatlization theread in order to see what kind the varible is it.
 
 	int dwIDLE; //set to 1 when the RST goes high after wake up (it is set in process_dwRSTn_irq)
 
@@ -498,7 +503,7 @@ int instancegetrole(void) ;
 // get the DW1000 device ID (e.g. 0xDECA0130 for DW1000)
 uint32 instancereaddeviceid(void) ;                                 // Return Device ID reg, enables validation of physical device presence
 
-double instancegetidist(int idx);
+double finstancegetidist(int idx);
 double instancegetidistraw(int idx);
 int instancegetidist_mm(int idx);
 int instancegetidistraw_mm(int idx);

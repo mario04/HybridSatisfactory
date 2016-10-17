@@ -278,7 +278,10 @@ int instance_init(void)
     dwt_setcallbacks(instance_txcallback, instance_rxcallback);
 
     instance_data[instance].monitor = 0;
-
+    // instance_data[instance].anch_pos_estimation[0] = 16.75;
+    // instance_data[instance].anch_pos_estimation[0] = 0;
+    // instance_data[instance].anch_pos_estimation[0] = 2.3;
+    
     instance_data[instance].lateTX = 0;
     instance_data[instance].lateRX = 0;
 
@@ -705,7 +708,8 @@ uint8 tagrxreenableRep(uint16 sourceAddress){
 			default:
 				if(instance_data[instance].reportTO > 0) //can get here as result of error frame so need to check
 				{
-					dwt_setrxtimeout((uint16)instance_data[instance].fwtoTime_sy * instance_data[instance].reportTO); //reconfigure the timeout
+
+					dwt_setrxtimeout((uint16)instance_data[instance].fwtoTime_syReport * instance_data[instance].reportTO); //reconfigure the timeout
                     // Compute the correct value for the report message.
 					dwt_rxenable(DWT_START_RX_IMMEDIATE) ;
 					type_pend = DWT_SIG_RX_PENDING ;
@@ -1129,7 +1133,7 @@ void ancpreparereport(uint16 sourceAddress, uint8 srcAddr_index, uint8 fcode_ind
     instance_data[instance].msg_f.sourceAddr[0] = instance_data[instance].eui64[0];
     instance_data[instance].msg_f.sourceAddr[1] = instance_data[instance].eui64[1];
     // Write calculated TOF into response message (get the previous ToF+range number from that tag)
-   
+    instance_data[instance].msg_f.messageData[REPORT_RNUM] = instance_data[instance].rangeNumA[tof_idx];
     instance_data[instance].rangeNum = frame[REPORT_RNUM+fcode_index] ;
     instance_data[instance].msg_f.seqNum = instance_data[instance].frameSN++;
     dwt_setrxaftertxdelay(instance_data[instance].ancRespRxDelay);  //units are 1.0256us - wait for wait4respTIM before RX on (delay RX)
@@ -1388,7 +1392,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 #if REPORT_IMP
  					case RTLS_DEMO_MSG_ANCH_REPORT:
  					{
-                        
+
                        
                         if(instance_data[instance].mode == TAG){
      						instance_data[instance].reportTO--;
@@ -1441,8 +1445,8 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
                             instance_data[instance].rxRepIdx = (int8) ((dw_event.msgu.frame[REPORT_RNUM+fcode_index] & 0xf) + ((sourceAddress&0x7) << 4));
                             instance_data[instance].rxRep[instance_data[instance].rxRepIdx] = 0;
                             ancpreparereport(sourceAddress, srcAddr_index, fcode_index, &dw_event.msgu.frame[0]);
-                            dwt_setrxtimeout((uint16)instance_data[instance].fwtoTimeAnc_sy); //reconfigure the timeout for response
-                            instance_data[0].delayedReplyTime = dw_event.timeStamp32h + 1.2*(instance_data[instance].fixedReplyDelayAnc >> 8);
+                            dwt_setrxtimeout((uint16)instance_data[instance].fwtoTimeAnc_syReport); //reconfigure the timeout for response
+                            instance_data[0].delayedReplyTime = dw_event.timeStamp32h + instance_data[0].fixedReportDelayAnc;
                             instance_data[instance].reportTO = NUM_EXPECTED_RESPONSES; //set number of expected responses to 3 (from other anchors)
                             
                         }
@@ -1486,7 +1490,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 				//send a response or re-enable rx
 				dw_event.type_pend = anctxorrxreenable(instance_data[instance].instanceAddress16, 6+0);
 			}
-            else if(instance_data[instance].reportTO > 0){
+            if(instance_data[instance].reportTO > 0){
                 instance_data[instance].reportTO--;
                 dw_event.type_pend = anctxorrxreenableReport(instance_data[instance].instanceAddress16);
             }

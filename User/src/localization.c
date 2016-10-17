@@ -187,6 +187,11 @@ void Locthread(void const *argument)
 			  }
 		  }
 
+		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].x = uwb->anch3_pos[0];
+		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].y = uwb->anch3_pos[1];
+		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].z = uwb->anch3_pos[2];
+		 
+
 		  if(info.Nummeasurements > NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
 		  {
 			  //EKF_PVA(&PVASys,&info,&ins_meas,&DCMbn);

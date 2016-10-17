@@ -103,6 +103,7 @@ typedef struct {                                 // Message object structure
 typedef struct
 {
 	double *Range;
+	double *anch3_pos;
 }Ranging_data; // Structure for location data
 
 typedef struct

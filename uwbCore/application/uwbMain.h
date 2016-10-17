@@ -20,7 +20,7 @@
 #include "main.h"
 #include <stdio.h>
 
-#define TAG_DEVICE (1) // In order to programm the device.
+#define TAG_DEVICE (1) // In order to programm the device. 1 if TAG and 0 if ANCHOR
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/

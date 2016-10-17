@@ -56,6 +56,8 @@
 #define TA_SW1_6			FALSE
 #define TA_SW1_7			FALSE
 
+
+
 #define TA_SW1_8			FALSE
 #define FASTRANGING 		SWITCH_OFF
 
@@ -154,11 +156,15 @@ chConfig_t chConfig[4] ={
 //Slot and Superframe Configuration for DecaRangeRTLS TREK Modes (4 default use cases selected by the switch S1 [2,3] on EVB1000, indexed 0 to 3 )
 sfConfig_t sfConfig[4] ={
 		//mode 1 - S1: 2 off, 3 off
+
+	/*	In order to fix the slot times after report implementation change the superframe and poll sleep times below for 10*50. Try to change only the poll sleep delay*/
 		{
 				(28), //ms -
 				(10),   //thus 10 slots - thus 280ms superframe means 3.57 Hz location rate (10 slots are needed as AtoA ranging takes 30+ ms)
-				(10*28), //superframe period
-				(10*28), //poll sleep delay
+				//(10*28), //superframe period
+				(10*28),
+				//(10*28), //poll sleep delay
+				(10*50), // around 46 ms is taken one slot time with the report implementation
 				(20000)
 		},
 		//mode 2 - S1: 2 on, 3 off
@@ -540,14 +546,15 @@ void UwbMainTask(void const * argument)
 #endif
 
 
-//		if(rx != TOF_REPORT_NUL)
-//		{
-//			if(instance_mode == TAG)
-//			{
-//				dataqueue.Range=&inst_idist[0];
-//				osMessagePut(MsgUwb,&dataqueue, osWaitForever);
-//			}
-//		}
+		if(rx != TOF_REPORT_NUL)
+		{
+			if(instance_mode == TAG)
+			{
+				dataqueue.Range=&inst_idist[0];
+				dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation;
+				osMessagePut(MsgUwb,&dataqueue, osWaitForever);
+			}
+		}
 
 		//if there is a new ranging report received or a new range has been calculated, then prepare data
 		//to output over USB - Virtual COM port, and update the LCD
