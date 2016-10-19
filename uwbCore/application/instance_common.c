@@ -278,9 +278,9 @@ int instance_init(void)
     dwt_setcallbacks(instance_txcallback, instance_rxcallback);
 
     instance_data[instance].monitor = 0;
-    // instance_data[instance].anch_pos_estimation[0] = 16.75;
-    // instance_data[instance].anch_pos_estimation[0] = 0;
-    // instance_data[instance].anch_pos_estimation[0] = 2.3;
+    instance_data[instance].anch_pos_estimation[0] = 16.75;
+    instance_data[instance].anch_pos_estimation[0] = 0;
+    instance_data[instance].anch_pos_estimation[0] = 2.3;
     
     instance_data[instance].lateTX = 0;
     instance_data[instance].lateRX = 0;
@@ -1427,6 +1427,16 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
  					}
  					break;
+
+                    case RTLS_DEMO_MSG_TAG_LOC:
+                    {
+                        
+                         if(instance_data[instance].mode == ANCHOR){
+                            instance_backtoanchor(&instance_data[instance]);
+                        }
+
+                    }
+                    break;
  #endif
 
 					case RTLS_DEMO_MSG_TAG_FINAL:
@@ -1700,6 +1710,13 @@ int instance_run(void)
 				instance_putevent(dw_event, DWT_SIG_RX_TIMEOUT);
 
 			}
+        }
+        else if (instance_data[instance].mode == ANCHOR)
+        {
+            instance_data[instance].TimeToChangeToTag = TRUE;
+            instance_data[instance].instanceTimerEn = 0;
+            instance_data[instance].CoopMode = FALSE;
+
         }
 #if (ANCTOANCTWR == 1) //allow anchor to anchor ranging
         else if(instance_data[instance].mode == ANCHOR)

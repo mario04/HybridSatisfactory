@@ -60,6 +60,7 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
 	// TODO : Initialization of old EKF implementations
 	osEvent evt;
 	Ranging_data *uwb;
+	localization_data dataqueue;
 	arm_matrix_instance_f32 auxF;
 	//arm_matrix_instance_f32 auxB;
 	Array vecAuxF;
@@ -106,7 +107,8 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
 	{
 	  	osThreadYield();
 	  	// Receive UWB data
-	  	evt = osMessageGet(MsgUwb,1);
+	  	evt = osMessageGet(MsgUwb,1); // 1 ms?? 
+	  	/*evt = osMessageGet(MsgUwb, osWaitForever);*/
 	  	if(evt.status == osEventMessage)
 		{
 			 uwb = evt.value.p;
@@ -143,6 +145,8 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
 					 run = 0; // Initialization has been finished
 				}
 			}
+			 dataqueue.estPos = &PVASys->X; // In order to send the estimation to the uwb thread.
+			 osMessagePut(MsgLoc, &dataqueue, osWaitForever);
 			info->Nummeasurements=0;
 		}
 	}
@@ -152,6 +156,7 @@ void Locthread(void const *argument)
 {
   osEvent  evt;
   Ranging_data *uwb;
+  localization_data dataqueue;
   uint8 i, uwb_data_ready = CLEAR_NEW_DATA;
   LocData info;
 //Coordinates Position;
@@ -161,6 +166,9 @@ void Locthread(void const *argument)
   Array vecIns_meas, vecDCMbn;
 
   info.Coordinates=coordinates;
+  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].x = uwb->anch3_pos[0];
+  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].y = uwb->anch3_pos[1];
+  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].z = uwb->anch3_pos[2];
   info.Range = (double*)pvPortMalloc(MAX_ANCHOR_LIST_SIZE*sizeof(double));
   info.AnchorPos = (uint8*)pvPortMalloc(MAX_ANCHOR_LIST_SIZE*sizeof(uint8));
   info.Nummeasurements = 0;
@@ -173,6 +181,7 @@ void Locthread(void const *argument)
   {
 	  osThreadYield();
 	  evt = osMessageGet(MsgUwb,1);
+	  // evt = osMessageGet(MsgUwb, osWaitForever);
 	  if(evt.status == osEventMessage)
 	  {
 		  uwb = evt.value.p;
@@ -186,10 +195,6 @@ void Locthread(void const *argument)
 				  info.Nummeasurements++; // Count the number of measurements
 			  }
 		  }
-
-		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].x = uwb->anch3_pos[0];
-		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].y = uwb->anch3_pos[1];
-		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].z = uwb->anch3_pos[2];
 		 
 
 		  if(info.Nummeasurements > NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
@@ -197,11 +202,14 @@ void Locthread(void const *argument)
 			  //EKF_PVA(&PVASys,&info,&ins_meas,&DCMbn);
 			  EKF_PVA2(&PVASys,&info);
 			  printMatrix(&PVASys.X);
+			  // Send the data to the uwb thread and send a localization message.
 		  }
 		  else // Send the predicted data
 		  {
 			  // TODO: When it is not possible to Update
 		  }
+		  dataqueue.estPos = &PVASys.X;
+		  osMessagePut(MsgLoc, &dataqueue, osWaitForever);
 		  info.Nummeasurements=0;
 		  uwb_data_ready = CLEAR_NEW_DATA;
 	  }

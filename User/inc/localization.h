@@ -30,9 +30,10 @@ osThreadId localizationTaskHandle;
 extern double inst_idist[MAX_ANCHOR_LIST_SIZE];
 extern osMessageQId  MsgIns;
 extern osMessageQId  MsgUwb;
+extern osMessageQId  MsgLoc;
 
 /* Defined macro ------------------------------------------------------------*/
-#define NUM_COORD (3) // define the number of coordinates system -> defines if the localization is 2D or 3D
+
 
 #define PRINT_RANGE (0) // 1-Enable 0-Disable, Print the measurements from anchors
 #define PRINT_INS (0) // 1-Enable 0-Disable, Print the Inertial measurements
@@ -105,6 +106,14 @@ typedef struct
 	double *Range;
 	double *anch3_pos;
 }Ranging_data; // Structure for location data
+
+
+
+typedef struct 
+{
+	double *estPos;	
+}localization_data; // send the coordinates estimated to the uwb thread
+
 
 typedef struct
 {
