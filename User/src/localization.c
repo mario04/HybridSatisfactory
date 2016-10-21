@@ -3,6 +3,7 @@
 //  File: localization.h - application localization function
 //
 //  Author: Orlando Tovar, Jun 2016
+//  Updated Version by Mario Ruiz
 //	Company: ISMB (Istituto Superiore Mario Boella)
 // -------------------------------------------------------------------------------------------------------------------
 
@@ -107,11 +108,17 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
 	{
 	  	osThreadYield();
 	  	// Receive UWB data
-	  	evt = osMessageGet(MsgUwb,1); // 1 ms?? 
-	  	/*evt = osMessageGet(MsgUwb, osWaitForever);*/
+	  	//evt = osMessageGet(MsgUwb,1); // 1 ms?? 
+	  	evt = osMessageGet(MsgUwb, osWaitForever);
 	  	if(evt.status == osEventMessage)
 		{
 			 uwb = evt.value.p;
+
+			 info->Coordinates[MAX_ANCHOR_LIST_SIZE-1].x = uwb->anch3_pos[0];
+		  	 info->Coordinates[MAX_ANCHOR_LIST_SIZE-1].y = uwb->anch3_pos[1];
+		     info->Coordinates[MAX_ANCHOR_LIST_SIZE-1].z = uwb->anch3_pos[2];
+
+
 
 			 for(i=0;i<MAX_ANCHOR_LIST_SIZE;i++)
 			 {
@@ -166,9 +173,9 @@ void Locthread(void const *argument)
   Array vecIns_meas, vecDCMbn;
 
   info.Coordinates=coordinates;
-  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].x = uwb->anch3_pos[0];
-  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].y = uwb->anch3_pos[1];
-  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].z = uwb->anch3_pos[2];
+
+
+
   info.Range = (double*)pvPortMalloc(MAX_ANCHOR_LIST_SIZE*sizeof(double));
   info.AnchorPos = (uint8*)pvPortMalloc(MAX_ANCHOR_LIST_SIZE*sizeof(uint8));
   info.Nummeasurements = 0;
@@ -180,11 +187,13 @@ void Locthread(void const *argument)
   while(1)
   {
 	  osThreadYield();
-	  evt = osMessageGet(MsgUwb,1);
-	  // evt = osMessageGet(MsgUwb, osWaitForever);
+	  //evt = osMessageGet(MsgUwb,1);
+	   evt = osMessageGet(MsgUwb, osWaitForever);
 	  if(evt.status == osEventMessage)
 	  {
 		  uwb = evt.value.p;
+
+		  		  
 
 		  for(i=0;i<MAX_ANCHOR_LIST_SIZE;i++)
 		  {

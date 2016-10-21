@@ -30,7 +30,7 @@ extern "C" {
 // once it receives a report or times out, before the next poll message is sent (before next ranging exchange is started).
 
 #define CORRECT_RANGE_BIAS  (1)     // Compensate for small bias due to uneven accumulator growth at close up high power
-#define WATCH_REPORT    (0)         // Send data for serial port and show the TOF value
+#define WATCH_REPORT    (1)         // Send data for serial port and show the TOF value
 #define REPORT_IMP      (1)              //Report messages implementation. Tag will receive the TOF value from anchor in the slot time
 // Anchor
 //     WATCH_REPORT = 0; REPORT_IMP = 0 
@@ -191,7 +191,6 @@ typedef enum inst_states
     TA_TXRESPONSE_SENT_TORX,	//12
 	TA_TXREPORT_WAIT_SEND,		//13
     TA_TXLOC_WAIT_SEND,
-    TA_TAG2ANCH_CONF,
     TA_ANCH2TAG_CONF,
     TA_REPORT_END
 
@@ -457,7 +456,16 @@ typedef struct
     double anch_pos_estimation[NUM_COORD]; // This must be double?? see the locatlization theread in order to see what kind the varible is it.
     uint8 CoopMode; // Flag to active the cooperative mode
     uint8 TimeToChangeToTag; // Time in which an anchor becomes a tag
+    uint8 TimeToChangeToAnch; // Time in which a tag becomes an anchor
 	int dwIDLE; //set to 1 when the RST goes high after wake up (it is set in process_dwRSTn_irq)
+
+    uint8 saved_rangeNumA; 
+    uint8 saved_rangeNum;
+    int32 saved_tagSleepCorrection;
+    uint32 saved_delayedReplyTime;
+    uint32 saved_rxTimeouts;
+    uint8 saved_frameSN;
+    int saved_longTermRangeCount;
 
 
 
