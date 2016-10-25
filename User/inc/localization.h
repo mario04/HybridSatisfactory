@@ -83,7 +83,7 @@ extern osMessageQId  MsgLoc;
 #define GRAVITY (9.80665)  // m/s^2
 #define ERROR_ACC (0.008*GRAVITY)
 //#define ERROR_GYRO (0.1*DEG2RAD)
-#define LIMIT_INIT_TRIES (10)
+#define LIMIT_INIT_TRIES (1)
 
 //#define MEAN_NO_ACC (1.0094*GRAVITY) //m/s^2  -> This is the magnitud of the acceleration vector when acceleration is 0
 //#define MEAN_NO_ACC (1.02*GRAVITY) //m/s^2  -> This is the magnitud of the acceleration vector when acceleration is 0

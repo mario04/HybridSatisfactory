@@ -163,12 +163,14 @@ int instancegetrole(void)
 
 int instancenewrange(void)
 {
+
 	int x = instance_data[0].newRange;
     instance_data[0].newRange = TOF_REPORT_NUL;
     return x;
 }
 int instancenewrangeReport(void)
 {
+
     int x = instance_data[0].newReportRange;
     instance_data[0].newReportRange = TOF_REPORT_NUL;
     return x;
@@ -279,8 +281,8 @@ int instance_init(void)
 
     instance_data[instance].monitor = 0;
     instance_data[instance].anch_pos_estimation[0] = 16.75;
-    instance_data[instance].anch_pos_estimation[0] = 0;
-    instance_data[instance].anch_pos_estimation[0] = 2.3;
+    instance_data[instance].anch_pos_estimation[1] = 0;
+    instance_data[instance].anch_pos_estimation[2] = 2.3;
     
     instance_data[instance].lateTX = 0;
     instance_data[instance].lateRX = 0;
@@ -545,7 +547,8 @@ void inst_processrxtimeout(instance_data_t *inst)
 		//send the final only if it has received response from anchor 0
         if((inst->previousState == TA_TXPOLL_WAIT_SEND) && ((inst->rxResponseMask & 0x1) == 0))
         {
-#if REPORT_IMP            
+#if REPORT_IMP    
+
             inst->TimeToChangeToAnch = TRUE;
        		inst->instToSleep = FALSE ; //set sleep to TRUE so that tag will go to DEEP SLEEP before next ranging attempt
 #else      
@@ -560,8 +563,16 @@ void inst_processrxtimeout(instance_data_t *inst)
         	//dwt_forcetrxoff();	//this will clear all events
        		//inst->instToSleep = TRUE ;
        		// initiate the re-transmission of the poll that was not responded to
+
 			inst->testAppState = TA_TXE_WAIT ;
-			inst->nextState = TA_TXLOC_WAIT_SEND ; // Process Also when the report message is implemented
+			inst->nextState = TA_TXLOC_WAIT_SEND ; 
+            inst->newReportRange = instance_calcranges(&inst->tofArray_reported[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxReportMask);
+            inst->rxReportMaskReport = inst->rxReportMask;
+            inst->rxReportMask = 0;
+            inst->newRangeTime = portGetTickCount() ;
+
+
+            // Process Also when the report message is implemented
             //inst->nextState = TA_TXPOLL_WAIT_SEND ; // Process Also when the report message is implemented
 
         }
@@ -615,8 +626,13 @@ void instance_txcallback(const dwt_callback_data_t *txd)
 
 	dw_event.uTimeStamp = portGetTickCount();
 
+
+                    // if (instance_data[0].test == 1 && instance_data[0].previousState == TA_TXPOLL_WAIT_SEND)
+                    // while(1);
+
 	if(txevent == DWT_SIG_TX_DONE)
 	{
+
 		//uint64 txtimestamp = 0;
 
 		//NOTE - we can only get TX good (done) while here
@@ -903,6 +919,7 @@ uint8 anctxorrxreenableReport(uint16 sourceAddress)
 
     if(instance_data[instance].reportTO == 0) //go back to RX without TO - ranging has finished. (wait for Final but no TO)
     {
+
         dwt_setrxtimeout(0); //reconfigure the timeout
         dwt_setpreambledetecttimeout(0);
         instance_data[instance].testAppState = TA_REPORT_END; 
@@ -1440,8 +1457,9 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
                     case RTLS_DEMO_MSG_TAG_LOC:
                     {
-                        
-                         if(instance_data[instance].mode == ANCHOR){
+                         if((instance_data[instance].mode == ANCHOR) && (instance_data[instance].shortAdd_idx != (A3_ANCHOR_ADDR & 0x3)))
+                         {
+                            
                             instance_backtoanchor(&instance_data[instance]);
                         }
 
@@ -1695,47 +1713,50 @@ int instance_run(void)
         	instance_data[instance].tagSleepCorrection = 0; //clear the correction
             instance_data[instance].instanceTimerEn = 1; //start timer
 
-        if(instance_data[instance].testAppState != TA_SLEEP_DONE){    
+        if(instance_data[instance].testAppState != TA_SLEEP_DONE){
+
+
             // Configuration to be an ANCHOR
                 instancesetrole(ANCHOR);
                 instance_data[instance].instanceAddress16 = A3_ANCHOR_ADDR;
-                //set source address
-                memcpy(instance_data[instance].eui64, &instance_data[instance].instanceAddress16, ADDR_BYTE_SIZE_S);
-                dwt_seteui(instance_data[instance].eui64);
-                instance_data[instance].shortAdd_idx = (instance_data[instance].instanceAddress16 & 0x3) ;
-                dwt_setaddress16(instance_data[instance].instanceAddress16);
+                 //set source address
+                 memcpy(instance_data[instance].eui64, &instance_data[instance].instanceAddress16, ADDR_BYTE_SIZE_S);
+                 dwt_seteui(instance_data[instance].eui64);
+                 instance_data[instance].shortAdd_idx = (instance_data[instance].instanceAddress16 & 0x3) ;
+                 dwt_setaddress16(instance_data[instance].instanceAddress16);
 
-                if(instance_data[instance].instanceAddress16 == GATEWAY_ANCHOR_ADDR)
-                {
-                        instance_data[instance].gatewayAnchor = TRUE;
-                }
+                 if(instance_data[instance].instanceAddress16 == GATEWAY_ANCHOR_ADDR)
+                 {
+                         instance_data[instance].gatewayAnchor = TRUE;
+                 }
 
                 dwt_enableframefilter(DWT_FF_NOTYPE_EN); //allow data, ack frames;
 
-                // First time anchor listens we don't do a delayed RX
-                dwt_setrxaftertxdelay(0);
-                //change to next state - wait to receive a message
-                instance_clearevents();
+                 // First time anchor listens we don't do a delayed RX
+                 dwt_setrxaftertxdelay(0);
+                // //change to next state - wait to receive a message
+                 instance_clearevents();
 
                 instance_data[instance].testAppState = TA_RXE_WAIT ;
 
-                dwt_setrxtimeout(0);
-                dwt_setpreambledetecttimeout(0);
-                instanceconfigframeheader16(instance_data[instance]);
+                 dwt_setrxtimeout(0);
+                 dwt_setpreambledetecttimeout(0);
+                 //instanceconfigframeheader16(&instance_data[instance]);
 
-                instance_data[instance].CoopMode = TRUE;
-                instance_data[instance].wait4ack = 0;
+                 instance_data[instance].CoopMode = TRUE;
+                 instance_data[instance].wait4ack = 0;
 
-                //save the important instance variables
-                instance_data[instance].saved_rangeNumA = instance_data[instance].rangeNumA;
-                instance_data[instance].saved_rangeNum = instance_data[instance].rangeNum;
-                instance_data[instance].saved_tagSleepCorrection = instance_data[instance].tagSleepCorrection;
-                instance_data[instance].saved_delayedReplyTime = instance_data[instance].delayedReplyTime;
-                instance_data[instance].saved_rxTimeouts = instance_data[instance].rxTimeouts;
-                instance_data[instance].saved_frameSN = instance_data[instance].frameSN;
-                instance_data[instance].saved_longTermRangeCount = instance_data[instance].longTermRangeCount;
+                // //save the important instance variables
+                 instance_data[instance].saved_rangeNumA = instance_data[instance].rangeNumA;
+                 instance_data[instance].saved_rangeNum = instance_data[instance].rangeNum;
+                 instance_data[instance].saved_tagSleepCorrection = instance_data[instance].tagSleepCorrection;
+                 instance_data[instance].saved_delayedReplyTime = instance_data[instance].delayedReplyTime;
+                 instance_data[instance].saved_rxTimeouts = instance_data[instance].rxTimeouts;
+                 instance_data[instance].saved_frameSN = instance_data[instance].frameSN;
+                 instance_data[instance].saved_longTermRangeCount = instance_data[instance].longTermRangeCount;
 
-                instanceclearcounts();
+                 instanceclearcounts();
+                
 
         }
 
@@ -1752,7 +1773,7 @@ int instance_run(void)
     //check if timer has expired
     if((instance_data[instance].instanceTimerEn == 1) && (instance_data[instance].stopTimer == 0))
     {
-        
+
 		if((portGetTickCount() - instance_data[instance].instanceWakeTime) > instance_data[instance].nextSleepPeriod)
 		{
             if(instance_data[instance].mode == TAG)
@@ -1769,7 +1790,9 @@ int instance_run(void)
         
             else if (instance_data[instance].mode == ANCHOR)
             {
-                instance_data[instance].TimeToChangeToTag = TRUE;
+
+                instance_data[instance].testAppState = TA_ANCH2TAG_CONF;
+                instance_clearevents();
                 instance_data[instance].instanceTimerEn = 0;
                 instance_data[instance].CoopMode = FALSE;
 

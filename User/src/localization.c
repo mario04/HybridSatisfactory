@@ -66,7 +66,7 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
 	//arm_matrix_instance_f32 auxB;
 	Array vecAuxF;
 	//Array vecAuxB;
-	uint8 i, run=1,Ninit=1;
+	uint8 i, run=1,Ninit=0;
 	Coordinates LLScoord; //For LLS output, Coordinates Estimation
 	float32_t PvectorPVA[3] = {0.3*0.3,0.1*0.1,ERROR_ACC*ERROR_ACC};
 	float32_t QvectorPVA[3] = {0.25*pow(TIME_INS,4)*pow(ERROR_ACC,2),pow(TIME_INS,2)*pow(ERROR_ACC,2),pow(ERROR_ACC,2)};
@@ -109,9 +109,10 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
 	  	osThreadYield();
 	  	// Receive UWB data
 	  	//evt = osMessageGet(MsgUwb,1); // 1 ms?? 
-	  	evt = osMessageGet(MsgUwb, osWaitForever);
+	  	evt = osMessageGet(MsgUwb, 1);
 	  	if(evt.status == osEventMessage)
 		{
+
 			 uwb = evt.value.p;
 
 			 info->Coordinates[MAX_ANCHOR_LIST_SIZE-1].x = uwb->anch3_pos[0];
@@ -138,7 +139,10 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
 				  PVASys->X.pData[0] = LLScoord.x;
 				  PVASys->X.pData[1] = LLScoord.y;
 				  PVASys->X.pData[2] = LLScoord.z;
+				  dataqueue.estPos = &PVASys->X; // In order to send the estimation to the uwb thread.
+			 	  osMessagePut(MsgLoc, &dataqueue, osWaitForever);
 				  run = 0; // Initialization has been finished
+
 			 }
 			 else // Check Number of tries
 			 {
@@ -149,11 +153,12 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
 					 PVASys->X.pData[0] = 7.9545;
 					 PVASys->X.pData[1] = 16.7495;
 					 PVASys->X.pData[2] = 1.7;
+					 dataqueue.estPos = &PVASys->X; // In order to send the estimation to the uwb thread.
+			 		 osMessagePut(MsgLoc, &dataqueue, osWaitForever);
 					 run = 0; // Initialization has been finished
 				}
 			}
-			 dataqueue.estPos = &PVASys->X; // In order to send the estimation to the uwb thread.
-			 osMessagePut(MsgLoc, &dataqueue, osWaitForever);
+			 
 			info->Nummeasurements=0;
 		}
 	}
@@ -183,14 +188,17 @@ void Locthread(void const *argument)
   //zeros(2,3, &ins_meas, &vecIns_meas);
   initSystem(&PVASys,&info, &vecPVASys); // Initialize all Structures
   //zeros(3,3,&DCMbn, &vecDCMbn);
-
+  
   while(1)
   {
 	  osThreadYield();
 	  //evt = osMessageGet(MsgUwb,1);
-	   evt = osMessageGet(MsgUwb, osWaitForever);
+
+	   evt = osMessageGet(MsgUwb, 1);
+
 	  if(evt.status == osEventMessage)
 	  {
+
 		  uwb = evt.value.p;
 
 		  		  
@@ -208,6 +216,7 @@ void Locthread(void const *argument)
 
 		  if(info.Nummeasurements > NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
 		  {
+
 			  //EKF_PVA(&PVASys,&info,&ins_meas,&DCMbn);
 			  EKF_PVA2(&PVASys,&info);
 			  printMatrix(&PVASys.X);
@@ -215,7 +224,10 @@ void Locthread(void const *argument)
 		  }
 		  else // Send the predicted data
 		  {
-			  // TODO: When it is not possible to Update
+			PVASys.X.pData[0] = 0;
+			PVASys.X.pData[1] = 0;
+			PVASys.X.pData[2] = 0;
+			   
 		  }
 		  dataqueue.estPos = &PVASys.X;
 		  osMessagePut(MsgLoc, &dataqueue, osWaitForever);

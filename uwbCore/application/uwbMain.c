@@ -457,14 +457,14 @@ int uwb_setup(void)
 	port_EnableEXT_IRQ(); //enable ScenSor IRQ before starting
 
 #if TAG_DEVICE
-	osThreadDef(uwbMainTask, UwbMainTask, osPriorityNormal, 0, 128); // 128
+	osThreadDef(uwbMainTask, UwbMainTask, osPriorityNormal, 0, 512); // 128
 #else
 	osThreadDef(uwbMainTask, UwbMainTask, osPriorityNormal, 0, 1024); // 128
 #endif
 	uwbMainTaskHandle = osThreadCreate(osThread(uwbMainTask), 0);
 
 #if TAG_DEVICE
-	osThreadDef(uwbProcessInterruptTask, UwbProcessInterruptTask, osPriorityAboveNormal, 0, 256); // 256
+	osThreadDef(uwbProcessInterruptTask, UwbProcessInterruptTask, osPriorityAboveNormal, 0, 512); // 256
 #else
 	osThreadDef(uwbProcessInterruptTask, UwbProcessInterruptTask, osPriorityAboveNormal, 0, 1024); // 256	
 #endif
@@ -494,11 +494,12 @@ void UwbMainTask(void const * argument)
 	while(1)
 	{
 
+
 		int monitor_local = instance_data[0].monitor ;
 		int txdiff = (portGetTickCnt() - instance_data[0].timeofTx);
 
 		#if TAG_DEVICE
-			osThreadYield();
+			//osThreadYield();
 		#endif
 
 
@@ -510,6 +511,7 @@ void UwbMainTask(void const * argument)
 		//if tag handle as a timeout
 		if((monitor_local == 1) && ( txdiff > instance_data[0].slotPeriod))
 		{
+
 			int an = 0;
 			uint32 tdly ;
 			uint32 reg1, reg2;
@@ -548,18 +550,33 @@ void UwbMainTask(void const * argument)
 
 		// if(rx != TOF_REPORT_NUL)
 		// {
-		// 	if(instance_mode == TAG)
-		// 	{
-		// 		dataqueue.Range=&inst_idist[0];
-		// 		dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation;
-		// 		osMessagePut(MsgUwb,&dataqueue, osWaitForever);
-		// 	}
+
+			// if(instance_mode == TAG)
+			// {
+			// 	dataqueue.Range=&inst_idist[0];
+			// 	dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation;
+			// 	osMessagePut(MsgUwb,&dataqueue, osWaitForever);
+			// }
+
 		// }
 
 		//if there is a new ranging report received or a new range has been calculated, then prepare data
 		//to output over USB - Virtual COM port, and update the LCD
 		if(rx != TOF_REPORT_NUL)
 		{
+
+			if(instance_mode == TAG)
+			{
+
+				dataqueue.Range=&inst_idist[0];
+				dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation;
+				osMessagePut(MsgUwb,&dataqueue, osWaitForever);
+				instance_data[0].test++;
+			}
+
+
+#if (TAG_DEVICE == 0)
+
 			int r= 0, aaddr, taddr; //l = 0,
 			int rangeTime, valid;
 			uint16 txa, rxa;
@@ -632,11 +649,13 @@ void UwbMainTask(void const * argument)
 				//update the print time
 				printTWRReports = portGetTickCnt();
 			}
+#endif
 		} //if new range present
 
-	//osThreadYield(); // Give the power to other task, it has finished the ranging task
 
-	}
+ 	osThreadYield(); // Give the power to other task, it has finished the ranging task
+
+ 	}
 }
 
 
