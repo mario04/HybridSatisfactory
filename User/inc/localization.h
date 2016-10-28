@@ -104,14 +104,14 @@ typedef struct {                                 // Message object structure
 typedef struct
 {
 	double *Range;
-	double *anch3_pos;
+	float32_t *anch3_pos;
 }Ranging_data; // Structure for location data
 
 
 
 typedef struct 
 {
-	double *estPos;	
+	float32_t *estPos;	
 }localization_data; // send the coordinates estimated to the uwb thread
 
 

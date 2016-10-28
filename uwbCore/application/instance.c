@@ -30,7 +30,7 @@
 // NOTE: the maximum RX timeout is ~ 65ms
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#define LCD_BUFF_LEN (80)
+#define LCD_BUFF_LEN (100)
 uint8 dataseq[LCD_BUFF_LEN];
 
 // -------------------------------------------------------------------------------------------------------------------
@@ -331,20 +331,7 @@ int testapprun(instance_data_t *inst, int message)
                 }
 
             }
-            // else if ((inst->nextState == TA_TXLOC_WAIT_SEND) && (inst->instToSleep)){
-                
-            //     inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
-            //     inst->instToSleep = FALSE ;
-            //     inst->testAppState = inst->nextState;
-            //     inst->nextState = 0; //clear
 
-            //     inst->newReportRange = instance_calcranges(&inst->tofArray_reported[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxReportMask);
-            //     inst->rxReportMaskReport = inst->rxReportMask;
-            //     inst->rxReportMask = 0;
-            //     inst->newRangeTime = portGetTickCount() ;
-            //     inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
-
-            // }
             else if ((inst->TimeToChangeToAnch == TRUE) && (inst->nextState == TA_TXPOLL_WAIT_SEND) )
             {
                 inst->rangeNum++;
@@ -424,6 +411,7 @@ int testapprun(instance_data_t *inst, int message)
 
         case TA_TXFINAL_WAIT_SEND :
             {
+
 
             	//the final has the same range number as the poll (part of the same ranging exchange)
                 inst->msg_f.messageData[POLL_RNUM] = (inst->mode == TAG) ? inst->rangeNum : inst->rangeNumAnc;
@@ -536,27 +524,45 @@ int testapprun(instance_data_t *inst, int message)
 
         	break;
         case TA_TXLOC_WAIT_SEND:{
-
             osEvent  evt;
             localization_data * loc;
+            uint32 tagPosx, tagPosy, tagPosz;
             //evt = osMessageGet(MsgLoc,1);
+
             evt = osMessageGet(MsgLoc,osWaitForever);
-            inst->testAppState = TA_TX_WAIT_CONF;                                               // wait confirmation
-            inst->previousState = TA_TXLOC_WAIT_SEND;
+
+
 
             if (evt.status == osEventMessage)
             {
 
-
                 loc = evt.value.p;
-                if ((loc->estPos[0] != 0) && (loc->estPos[1] != 0) && (loc->estPos[2] != 0) )
+
+                sprintf((char*)&dataseq[0], "TX: %3.2f m TY:%3.2f m ", loc->estPos[0], loc->estPos[1]);
+
+//                  toggle = 1;
+                    uartWriteLineNoOS((char *) dataseq); //send some data
+
+                if ((loc->estPos[0] != 0.0) && (loc->estPos[1] != 0.0) )
                 {
+
+
                     inst->anch_pos_estimation[0] = loc->estPos[0];
                     inst->anch_pos_estimation[1] = loc->estPos[1];
                     inst->anch_pos_estimation[2] = loc->estPos[2];
 
                     inst->msg_f.messageData[LOC_RNUM] = inst->rangeNum;
                     inst->msg_f.messageData[FCODE] = RTLS_DEMO_MSG_TAG_LOC;
+
+                    tagPosx = (uint32)(inst->anch_pos_estimation[0]*1000);
+                    tagPosy = (uint32)(inst->anch_pos_estimation[1]*1000);
+                    tagPosz = (uint32)(inst->anch_pos_estimation[2]*1000);
+
+                    memcpy(&(inst->msg_f.messageData[XLOC_POS]), &tagPosx, 4);
+                    memcpy(&(inst->msg_f.messageData[YLOC_POS]), &tagPosy, 4);
+                    memcpy(&(inst->msg_f.messageData[ZLOC_POS]), &tagPosz, 4);
+
+
                     inst->psduLength = (TAG_LOC_MSG_LEN + FRAME_CRTL_AND_ADDRESS_S + FRAME_CRC);
                     inst->msg_f.seqNum = inst->frameSN++;
                     inst->msg_f.sourceAddr[0] = inst->eui64[0]; //copy the address
@@ -564,6 +570,7 @@ int testapprun(instance_data_t *inst, int message)
                     inst->msg_f.destAddr[0] = 0xff;  //set the destination address (broadcast == 0xffff)
                     inst->msg_f.destAddr[1] = 0xff;  //set the destination address (broadcast == 0xffff)
                     dwt_writetxdata(inst->psduLength, (uint8 *)  &inst->msg_f, 0) ; // write the frame data
+
                     // dwt_setrxaftertxdelay(0);  
                     inst->delayedReplyTime = inst->delayedReplyTimeLOC;
                     if(instancesenddlypacket(inst, DWT_START_TX_DELAYED))
@@ -596,10 +603,26 @@ int testapprun(instance_data_t *inst, int message)
                     }
                 }    
                 // Show the localization.
+                else{
+                    if(inst->mode == TAG)
+                    {
 
-                inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;                
+                        inst->TimeToChangeToAnch = TRUE;
+                        inst->instToSleep = FALSE;
+                        inst->testAppState = TA_TXE_WAIT;
+                        inst->nextState = TA_TXPOLL_WAIT_SEND ;
+                        break;
+                    }
+                    else{
+                        instance_backtoanchor(inst);
+                    }
+                }
+
+
+                               
                                
             }
+             inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
         }
         break;
         case TA_REPORT_END:
@@ -627,20 +650,6 @@ int testapprun(instance_data_t *inst, int message)
         case TA_ANCH2TAG_CONF:
         {
 
-           //  TA_SW1_5 = (inst->newRangeTagAddress&0x4)?TRUE:FALSE;
-           //  TA_SW1_6 = (inst->newRangeTagAddress&0x2)?TRUE:FALSE;
-           //  TA_SW1_7 = (inst->newRangeTagAddress&0x1)?TRUE:FALSE;
-
-
-           // uint8 s1switch2 = BUTTON_0 << 1 // is_switch_on(TA_SW1_2) << 2
-           //                  | TA_SW1_3 << 2
-           //                  | TA_SW1_4 << 3
-           //                  | TA_SW1_5 << 4
-           //                  | TA_SW1_6 << 5
-           //                  | TA_SW1_7 << 6
-           //                  | TA_SW1_8 << 7;
-
-           //  inittestapplication(s1switch2);
             dwt_forcetrxoff();
             instancesetrole(TAG);
             inst->instanceAddress16 = inst->newRangeTagAddress;
@@ -730,10 +739,6 @@ int testapprun(instance_data_t *inst, int message)
                 else if (inst->gotTO == 1) //timeout
                 {
 
-
-#if defined(DEBUG)
-					printf("got TO in TA_TX_WAIT_CONF\n");
-#endif
                     inst_processrxtimeout(inst);
                     inst->gotTO = 0;
 					inst->wait4ack = 0 ; //clear this
@@ -750,6 +755,7 @@ int testapprun(instance_data_t *inst, int message)
                 {
                     if(inst->mode == TAG)
                     {
+
                         inst->TimeToChangeToAnch = TRUE;
                         inst->instToSleep = FALSE;
                         inst->testAppState = TA_TXE_WAIT;
@@ -764,6 +770,7 @@ int testapprun(instance_data_t *inst, int message)
 
                 else
                 {
+
 					inst->txu.txTimeStamp = dw_event->timeStamp;
 
 					if(inst->previousState == TA_TXPOLL_WAIT_SEND)
@@ -980,6 +987,7 @@ int testapprun(instance_data_t *inst, int message)
                             case RTLS_DEMO_MSG_ANCH_RESP:
                             {
 
+
                             	uint8 currentRangeNum = (messageData[TOFRN] + 1); //current = previous + 1
 
                             	if(GATEWAY_ANCHOR_ADDR == (srcAddr[0] | ((uint32)(srcAddr[1] << 8)))) //if response from gateway then use the correction factor
@@ -1097,6 +1105,7 @@ int testapprun(instance_data_t *inst, int message)
                             case RTLS_DEMO_MSG_ANCH_REPORT:
                             {
 
+
                             	uint8 currentRangeNum = (messageData[REPORT_RNUM]);
                                 if(dw_event->type_pend == DWT_SIG_TX_PENDING)
                                 {
@@ -1163,26 +1172,34 @@ int testapprun(instance_data_t *inst, int message)
 
                             case RTLS_DEMO_MSG_TAG_LOC:
                             {
-                                
+
                                 if(inst->mode == ANCHOR) //tag should ignore any other Final from anchors
                                 {
                                     if (inst->shortAdd_idx == (A3_ANCHOR_ADDR & 0x3))
                                         {
-                                            double tagPosx = 0;
-                                            double tagPosy = 0;
-                                            double tagPosz = 0;
+
+                                            uint32 tagPosx = 0;
+                                            uint32 tagPosy = 0;
+                                            uint32 tagPosz = 0;
                                             if(inst->rangeNumA[srcAddr[0]&0x7] != messageData[LOC_RNUM]){
                                                 inst->testAppState = TA_RXE_WAIT ;              
                                                 break;
                                             }
+                                            
                                             inst->delayedReplyTime = 0 ;
-                                            memcpy(&tagPosx, &(messageData[XLOC_POS]), 8);
-                                            memcpy(&tagPosy, &(messageData[YLOC_POS]), 8);
-                                            memcpy(&tagPosz, &(messageData[ZLOC_POS]), 8);
+                                            memcpy(&tagPosx, &(messageData[XLOC_POS]), 4);
+                                            memcpy(&tagPosy, &(messageData[YLOC_POS]), 4);
+                                            memcpy(&tagPosz, &(messageData[ZLOC_POS]), 4);
 
-                                            inst->anch_pos_estimation[0] = tagPosx;
-                                            inst->anch_pos_estimation[1] = tagPosy;
-                                            inst->anch_pos_estimation[2] = tagPosz;
+                                            inst->anch_pos_estimation[0] = tagPosx/1000.0;
+                                            inst->anch_pos_estimation[1] = tagPosy/1000.0;
+                                            inst->anch_pos_estimation[2] = tagPosz/1000.0;
+
+
+                                 sprintf((char*)&dataseq[0], "RX: %3.2f m RY:%3.2f m ", inst->anch_pos_estimation[0], inst->anch_pos_estimation[1]);
+
+// //                  toggle = 1;
+                                 uartWriteLineNoOS((char *) dataseq); //send some data
 
                                             // Code for cooperative localization
                                             instance_backtoanchor(inst);
@@ -1530,7 +1547,7 @@ void instancesetreplydelay(int delayus) //delay in us
         instance_data[instance].fwtoTimeAnc_syReport = respframe_syReport; //add some margin so we don't timeout too soon
 
 		instance_data[instance].fixedReplyDelayAnc = convertmicrosectodevicetimeu (respframe + RX_RESPONSE1_TURNAROUND_110K);
-        instance_data[instance].fixedReportDelayAnc = 1.5*(instance_data[instance].fixedReplyDelayAnc >> 8);
+        instance_data[instance].fixedReportDelayAnc = 2*(instance_data[instance].fixedReplyDelayAnc >> 8);
 
 
 		instance_data[instance].fixedReplyDelayAncP = (uint32) (((uint64) convertmicrosectodevicetimeu (preamblelen)) >> 8) + 16;

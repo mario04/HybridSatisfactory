@@ -56,12 +56,11 @@ void convert_ins_data(long *input,double *output)
 
 
 
-void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
+void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys, localization_data * dataqueue, float32_t * auxX)
 {
 	// TODO : Initialization of old EKF implementations
 	osEvent evt;
 	Ranging_data *uwb;
-	localization_data dataqueue;
 	arm_matrix_instance_f32 auxF;
 	//arm_matrix_instance_f32 auxB;
 	Array vecAuxF;
@@ -109,9 +108,11 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
 	  	osThreadYield();
 	  	// Receive UWB data
 	  	//evt = osMessageGet(MsgUwb,1); // 1 ms?? 
+
 	  	evt = osMessageGet(MsgUwb, 1);
 	  	if(evt.status == osEventMessage)
 		{
+
 
 			 uwb = evt.value.p;
 
@@ -131,35 +132,40 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys)
 				  }
 			 }
 
-			 if(info->Nummeasurements > NUM_COORD && info->Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
+			 if(info->Nummeasurements >= NUM_COORD && info->Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
 			 {
 				  LLScoord= LLS(info); // Save the position estimated
 				  if(LLScoord.z > 0)
 					  LLScoord.z = 1.7; // Medium heigh of a person
-				  PVASys->X.pData[0] = LLScoord.x;
-				  PVASys->X.pData[1] = LLScoord.y;
-				  PVASys->X.pData[2] = LLScoord.z;
-				  dataqueue.estPos = &PVASys->X; // In order to send the estimation to the uwb thread.
-			 	  osMessagePut(MsgLoc, &dataqueue, osWaitForever);
+				  (PVASys->X).pData[0] = (float32_t) LLScoord.x;
+				  (PVASys->X).pData[1] = (float32_t) LLScoord.y;
+				  (PVASys->X).pData[2] = (float32_t) LLScoord.z;
+		  
+				  
+
 				  run = 0; // Initialization has been finished
 
 			 }
 			 else // Check Number of tries
 			 {
-				 Ninit++;
-				 if(Ninit==LIMIT_INIT_TRIES)
-				 {
+//				 Ninit++;
+				 //if(Ninit==LIMIT_INIT_TRIES)
+				 //{
 //					 // Coordinates for center of the room
-					 PVASys->X.pData[0] = 7.9545;
-					 PVASys->X.pData[1] = 16.7495;
-					 PVASys->X.pData[2] = 1.7;
-					 dataqueue.estPos = &PVASys->X; // In order to send the estimation to the uwb thread.
-			 		 osMessagePut(MsgLoc, &dataqueue, osWaitForever);
+
+					 (PVASys->X).pData[0] = (float32_t) 7.9545;
+					 (PVASys->X).pData[1] = (float32_t) 16.7495;
+					 (PVASys->X).pData[2] = (float32_t) 1.7;
 					 run = 0; // Initialization has been finished
-				}
+				//}
 			}
-			 
+			auxX[0] = (PVASys->X).pData[0];
+			auxX[1] = (PVASys->X).pData[1];
+			auxX[2] = (PVASys->X).pData[2];
+			dataqueue->estPos = auxX;
+			osMessagePut(MsgLoc, dataqueue, osWaitForever);	 
 			info->Nummeasurements=0;
+
 		}
 	}
 }
@@ -168,6 +174,7 @@ void Locthread(void const *argument)
 {
   osEvent  evt;
   Ranging_data *uwb;
+  float32_t auxX[NUM_COORD];
   localization_data dataqueue;
   uint8 i, uwb_data_ready = CLEAR_NEW_DATA;
   LocData info;
@@ -186,7 +193,7 @@ void Locthread(void const *argument)
   info.Nummeasurements = 0;
 
   //zeros(2,3, &ins_meas, &vecIns_meas);
-  initSystem(&PVASys,&info, &vecPVASys); // Initialize all Structures
+  initSystem(&PVASys,&info, &vecPVASys, &dataqueue, &auxX[0]); // Initialize all Structures
   //zeros(3,3,&DCMbn, &vecDCMbn);
   
   while(1)
@@ -201,7 +208,9 @@ void Locthread(void const *argument)
 
 		  uwb = evt.value.p;
 
-		  		  
+		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].x = uwb->anch3_pos[0];
+		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].y = uwb->anch3_pos[1];
+		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].z = uwb->anch3_pos[2];
 
 		  for(i=0;i<MAX_ANCHOR_LIST_SIZE;i++)
 		  {
@@ -214,25 +223,36 @@ void Locthread(void const *argument)
 		  }
 		 
 
-		  if(info.Nummeasurements > NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
+		  if(info.Nummeasurements >= NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
 		  {
 
 			  //EKF_PVA(&PVASys,&info,&ins_meas,&DCMbn);
 			  EKF_PVA2(&PVASys,&info);
-			  printMatrix(&PVASys.X);
+			//  printMatrix(&PVASys.X);
+
 			  // Send the data to the uwb thread and send a localization message.
 		  }
 		  else // Send the predicted data
 		  {
-			PVASys.X.pData[0] = 0;
-			PVASys.X.pData[1] = 0;
-			PVASys.X.pData[2] = 0;
+		  	//while(1);
+
+			(PVASys.X).pData[0] = 0.0;
+			(PVASys.X).pData[1] = 0.0;
+			(PVASys.X).pData[2] = 0.0;
+			
 			   
 		  }
-		  dataqueue.estPos = &PVASys.X;
+
+		  	auxX[0] = (PVASys.X).pData[0];
+			auxX[1] = (PVASys.X).pData[1];
+			auxX[2] = (PVASys.X).pData[2];
+			
+			dataqueue.estPos = &auxX[0];
+
 		  osMessagePut(MsgLoc, &dataqueue, osWaitForever);
 		  info.Nummeasurements=0;
 		  uwb_data_ready = CLEAR_NEW_DATA;
+		  
 	  }
  }
   freeArray(&vecIns_meas);
@@ -501,7 +521,10 @@ Coordinates LLS(LocData* Loc)
 
 	Coord.x = result.pData[0];
 	Coord.y = result.pData[1];
-	Coord.z = result.pData[2];
+	if(Loc->Nummeasurements > 3)
+		Coord.z = result.pData[2];
+	else
+		Coord.z = 0;
 
 	freeArray(&vecResult);
 	return Coord;
@@ -855,10 +878,10 @@ void EKF_PVA2(PVA_EKF *PVASys,LocData* Loc)
 	k = 0;
 	for(i=0;i<Pnew.numRows;i++) // Copy the new matrixes in the old ones
 	{
-		PVASys->X.pData[i] = Xnew.pData[i];
+		(PVASys->X).pData[i] = Xnew.pData[i];
 		for(j=0;j<Pnew.numCols;j++)
 		{
-			PVASys->P.pData[k] = Pnew.pData[k];
+			(PVASys->P).pData[k] = Pnew.pData[k];
 			k++;
 		}
 	}

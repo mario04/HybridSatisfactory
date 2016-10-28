@@ -72,7 +72,7 @@ extern "C" {
 #define TAG_POLL_MSG_LEN                    2				// FunctionCode(1), Range Num (1)
 #define ANCH_RESPONSE_MSG_LEN               8               // FunctionCode(1), Sleep Correction Time (2), Measured_TOF_Time(4), Range Num (1) (previous)
 #define ANCH_REPORT_MSG_LEN                 6               // FunctionCode(1), Range Num (1), Measured_TOF_Time(4)
-#define TAG_LOC_MSG_LEN                     26              // FunctionCode(1), Range Num(1), xPosition (8), yPosition(8), zPosition(8)
+#define TAG_LOC_MSG_LEN                     14              // FunctionCode(1), Range Num(1), xPosition (4), yPosition(4), zPosition(4)
 #define TAG_FINAL_MSG_LEN                   33              // FunctionCode(1), Range Num (1), Poll_TxTime(5),
 															// Resp0_RxTime(5), Resp1_RxTime(5), Resp2_RxTime(5), Resp3_RxTime(5), Final_TxTime(5), Valid Response Mask (1)
 
@@ -142,8 +142,8 @@ extern "C" {
 #define TOFREP								2
 #define LOC_RNUM                            1
 #define XLOC_POS                            2
-#define YLOC_POS                            10
-#define ZLOC_POS                            18
+#define YLOC_POS                            6
+#define ZLOC_POS                            10
 
 //this it the delay used for configuring the receiver on delay (wait for response delay)
 //NOTE: this RX_RESPONSE_TURNAROUND is dependent on the microprocessor and code optimisations
@@ -453,7 +453,7 @@ typedef struct
     int8 rxReportMaskReport;
 	int8 reportTO;
     int8 test;
-    double anch_pos_estimation[NUM_COORD]; // This must be double?? see the locatlization theread in order to see what kind the varible is it.
+    float anch_pos_estimation[NUM_COORD]; // This must be double?? see the locatlization theread in order to see what kind the varible is it.
     uint8 CoopMode; // Flag to active the cooperative mode
     uint8 TimeToChangeToTag; // Time in which an anchor becomes a tag
     uint8 TimeToChangeToAnch; // Time in which a tag becomes an anchor

@@ -162,8 +162,8 @@ sfConfig_t sfConfig[4] ={
 				(68), //ms -
 				(10),   //thus 10 slots - thus 280ms superframe means 3.57 Hz location rate (10 slots are needed as AtoA ranging takes 30+ ms)
 				//(10*28), //superframe period
-				(10*68),
-				(10*68), //poll sleep delay
+				(10*28),
+				(10*28), //poll sleep delay
 				//(10*50), // around 46 ms is taken one slot time with the report implementation
 				(20000)
 		},
@@ -567,11 +567,14 @@ void UwbMainTask(void const * argument)
 
 			if(instance_mode == TAG)
 			{
-
 				dataqueue.Range=&inst_idist[0];
-				dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation;
+				dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation[0];
+
 				osMessagePut(MsgUwb,&dataqueue, osWaitForever);
 				instance_data[0].test++;
+
+
+				
 			}
 
 

@@ -627,7 +627,7 @@ void instance_txcallback(const dwt_callback_data_t *txd)
 	dw_event.uTimeStamp = portGetTickCount();
 
 
-                    // if (instance_data[0].test == 1 && instance_data[0].previousState == TA_TXPOLL_WAIT_SEND)
+                     //if (instance_data[0].test == 1 && instance_data[0].previousState == TA_TXPOLL_WAIT_SEND)
                     // while(1);
 
 	if(txevent == DWT_SIG_TX_DONE)
@@ -1332,7 +1332,8 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 					case RTLS_DEMO_MSG_ANCH_RESP2:
 					{
 						
-						//we are a tag
+					
+                    	//we are a tag
 					    if(instance_data[instance].mode == TAG)
 					    {
 							uint8 index ;
@@ -1457,6 +1458,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
                     case RTLS_DEMO_MSG_TAG_LOC:
                     {
+                        
                          if((instance_data[instance].mode == ANCHOR) && (instance_data[instance].shortAdd_idx != (A3_ANCHOR_ADDR & 0x3)))
                          {
                             
