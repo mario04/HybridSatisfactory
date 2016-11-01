@@ -137,6 +137,8 @@ int testapprun(instance_data_t *inst, int message)
                     dwt_enableframefilter(DWT_FF_DATA_EN | DWT_FF_ACK_EN); //allow data, ack frames;
                     dwt_setpanid(inst->panID);
 
+                    
+
                     memcpy(inst->eui64, &inst->instanceAddress16, ADDR_BYTE_SIZE_S);
                     dwt_seteui(inst->eui64);
 
@@ -526,7 +528,9 @@ int testapprun(instance_data_t *inst, int message)
         case TA_TXLOC_WAIT_SEND:{
             osEvent  evt;
             localization_data * loc;
-            uint32 tagPosx, tagPosy, tagPosz;
+            uint32 tagPosx, tagPosy;
+            int l = 0, r = 0;
+            //uint32 tagPosz;
             //evt = osMessageGet(MsgLoc,1);
 
             evt = osMessageGet(MsgLoc,osWaitForever);
@@ -549,18 +553,25 @@ int testapprun(instance_data_t *inst, int message)
 
                     inst->anch_pos_estimation[0] = loc->estPos[0];
                     inst->anch_pos_estimation[1] = loc->estPos[1];
-                    inst->anch_pos_estimation[2] = loc->estPos[2];
+                    //inst->anch_pos_estimation[2] = loc->estPos[2];
 
                     inst->msg_f.messageData[LOC_RNUM] = inst->rangeNum;
                     inst->msg_f.messageData[FCODE] = RTLS_DEMO_MSG_TAG_LOC;
 
                     tagPosx = (uint32)(inst->anch_pos_estimation[0]*1000);
                     tagPosy = (uint32)(inst->anch_pos_estimation[1]*1000);
-                    tagPosz = (uint32)(inst->anch_pos_estimation[2]*1000);
+                    //tagPosz = (uint32)(inst->anch_pos_estimation[2]*1000);
 
                     memcpy(&(inst->msg_f.messageData[XLOC_POS]), &tagPosx, 4);
                     memcpy(&(inst->msg_f.messageData[YLOC_POS]), &tagPosy, 4);
-                    memcpy(&(inst->msg_f.messageData[ZLOC_POS]), &tagPosz, 4);
+                    //memcpy(&(inst->msg_f.messageData[ZLOC_POS]), &tagPosz, 4);
+
+                    l = instancegetlcount() & 0xFFFF;
+                    r = instancenewrangetim() & 0xffffffff;
+                    memcpy(&(inst->msg_f.messageData[LTRANGE]), &l, 4);
+                    memcpy(&(inst->msg_f.messageData[RANGETIME]), &r, 4);
+
+                    inst->msg_f.messageData[VRESPLOC] = inst->rxResponseMaskReport;
 
 
                     inst->psduLength = (TAG_LOC_MSG_LEN + FRAME_CRTL_AND_ADDRESS_S + FRAME_CRC);
@@ -1180,7 +1191,7 @@ int testapprun(instance_data_t *inst, int message)
 
                                             uint32 tagPosx = 0;
                                             uint32 tagPosy = 0;
-                                            uint32 tagPosz = 0;
+                                            //uint32 tagPosz = 0;
                                             if(inst->rangeNumA[srcAddr[0]&0x7] != messageData[LOC_RNUM]){
                                                 inst->testAppState = TA_RXE_WAIT ;              
                                                 break;
@@ -1189,11 +1200,11 @@ int testapprun(instance_data_t *inst, int message)
                                             inst->delayedReplyTime = 0 ;
                                             memcpy(&tagPosx, &(messageData[XLOC_POS]), 4);
                                             memcpy(&tagPosy, &(messageData[YLOC_POS]), 4);
-                                            memcpy(&tagPosz, &(messageData[ZLOC_POS]), 4);
+                                            //memcpy(&tagPosz, &(messageData[ZLOC_POS]), 4);
 
                                             inst->anch_pos_estimation[0] = tagPosx/1000.0;
                                             inst->anch_pos_estimation[1] = tagPosy/1000.0;
-                                            inst->anch_pos_estimation[2] = tagPosz/1000.0;
+                                            //inst->anch_pos_estimation[2] = tagPosz/1000.0;
 
 
                                  sprintf((char*)&dataseq[0], "RX: %3.2f m RY:%3.2f m ", inst->anch_pos_estimation[0], inst->anch_pos_estimation[1]);

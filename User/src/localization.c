@@ -23,7 +23,7 @@ Coordinates coordinates[MAX_ANCHOR_LIST_SIZE]={
 		{23.71,6.33,2.3},    //Anchor0
 		{12.41,4.55,2.3},   //Anchor1
 		{17.97,8.85,1.4},    //Anchor2
-		{16.75,0,2.3}     //Anchor3
+		{16.75,0,0}     //Anchor3
 };
 
 
@@ -118,7 +118,7 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys, localizat
 
 			 info->Coordinates[MAX_ANCHOR_LIST_SIZE-1].x = uwb->anch3_pos[0];
 		  	 info->Coordinates[MAX_ANCHOR_LIST_SIZE-1].y = uwb->anch3_pos[1];
-		     info->Coordinates[MAX_ANCHOR_LIST_SIZE-1].z = uwb->anch3_pos[2];
+		     //info->Coordinates[MAX_ANCHOR_LIST_SIZE-1].z = uwb->anch3_pos[2];
 
 
 
@@ -132,7 +132,7 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys, localizat
 				  }
 			 }
 
-			 if(info->Nummeasurements >= NUM_COORD && info->Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
+			 if(info->Nummeasurements > NUM_COORD && info->Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
 			 {
 				  LLScoord= LLS(info); // Save the position estimated
 				  if(LLScoord.z > 0)
@@ -155,13 +155,13 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys, localizat
 
 					 (PVASys->X).pData[0] = (float32_t) 7.9545;
 					 (PVASys->X).pData[1] = (float32_t) 16.7495;
-					 (PVASys->X).pData[2] = (float32_t) 1.7;
+					 
 					 run = 0; // Initialization has been finished
 				//}
 			}
 			auxX[0] = (PVASys->X).pData[0];
 			auxX[1] = (PVASys->X).pData[1];
-			auxX[2] = (PVASys->X).pData[2];
+			
 			dataqueue->estPos = auxX;
 			osMessagePut(MsgLoc, dataqueue, osWaitForever);	 
 			info->Nummeasurements=0;
@@ -210,7 +210,7 @@ void Locthread(void const *argument)
 
 		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].x = uwb->anch3_pos[0];
 		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].y = uwb->anch3_pos[1];
-		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].z = uwb->anch3_pos[2];
+		  //info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].z = uwb->anch3_pos[2];
 
 		  for(i=0;i<MAX_ANCHOR_LIST_SIZE;i++)
 		  {
@@ -223,7 +223,7 @@ void Locthread(void const *argument)
 		  }
 		 
 
-		  if(info.Nummeasurements >= NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
+		  if(info.Nummeasurements > NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
 		  {
 
 			  //EKF_PVA(&PVASys,&info,&ins_meas,&DCMbn);
@@ -238,14 +238,14 @@ void Locthread(void const *argument)
 
 			(PVASys.X).pData[0] = 0.0;
 			(PVASys.X).pData[1] = 0.0;
-			(PVASys.X).pData[2] = 0.0;
+			
 			
 			   
 		  }
 
 		  	auxX[0] = (PVASys.X).pData[0];
 			auxX[1] = (PVASys.X).pData[1];
-			auxX[2] = (PVASys.X).pData[2];
+			
 			
 			dataqueue.estPos = &auxX[0];
 
@@ -708,6 +708,21 @@ void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,arm_matrix_instance_f32 *ins_meas,arm_
 	freeArray(&vecPnew);
 }
 
+float32_t trace(arm_matrix_instance_f32 * P)
+{
+	float32_t traceValue = 0;
+	int col, row;
+	for(int i = 0; i < P->numCols*P->numRows; i++){
+		col = i%P->numCols;
+		row = i/P->numCols;
+		if(col == row)
+			traceValue = traceValue + P->pData[i];
+
+	}
+
+	return traceValue;
+}
+
 void EKF_PVA2(PVA_EKF *PVASys,LocData* Loc)
 {
 
@@ -790,7 +805,13 @@ void EKF_PVA2(PVA_EKF *PVASys,LocData* Loc)
 
 	// R computation
 	eye(Loc->Nummeasurements, STD_DIST*STD_DIST, &R, &vecR);
+#if COOPERATIVE
+	if(Loc->Nummeasurements == 4)
+	{
+		R.pData[Loc->Nummeasurements-1] = STD_DIST*STD_DIST + trace(&PVASys->P);
+	}
 
+#endif	
 	// h Computation
 	GetDistance(Loc,&Xhat,&h, &vech); //Matrix Loc.Nummeasurementsx1
 	// Y Computation

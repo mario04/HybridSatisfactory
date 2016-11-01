@@ -282,7 +282,7 @@ int instance_init(void)
     instance_data[instance].monitor = 0;
     instance_data[instance].anch_pos_estimation[0] = 16.75;
     instance_data[instance].anch_pos_estimation[1] = 0;
-    instance_data[instance].anch_pos_estimation[2] = 2.3;
+    
     
     instance_data[instance].lateTX = 0;
     instance_data[instance].lateRX = 0;

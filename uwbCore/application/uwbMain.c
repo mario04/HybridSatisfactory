@@ -54,7 +54,7 @@
 //Address
 #define TA_SW1_5			FALSE
 #define TA_SW1_6			FALSE
-#define TA_SW1_7			FALSE
+#define TA_SW1_7			TRUE
 
 
 
@@ -571,7 +571,7 @@ void UwbMainTask(void const * argument)
 				dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation[0];
 
 				osMessagePut(MsgUwb,&dataqueue, osWaitForever);
-				instance_data[0].test++;
+				
 
 
 				

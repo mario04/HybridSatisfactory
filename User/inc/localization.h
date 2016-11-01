@@ -176,6 +176,8 @@ void EKF_PVA(PVA_EKF *PVASys,LocData* Loc,arm_matrix_instance_f32 *ins_meas,arm_
 void CalculateY(LocData* Loc,arm_matrix_instance_f32* Mat,arm_matrix_instance_f32* result, Array * vec);
 void EKF_PVA2(PVA_EKF *PVASys,LocData* Loc);
 
+float32_t trace(arm_matrix_instance_f32 * P);
+
 void GetDistance(LocData* Loc,arm_matrix_instance_f32* Xp, arm_matrix_instance_f32* result, Array * vec);
 Coordinates LLS(LocData* Loc);
 /* Defined functions ------------------------------------------------------- */

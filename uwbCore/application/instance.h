@@ -50,7 +50,7 @@ extern "C" {
 *******************************************************************************************************************/
 
 #define NUM_INST            1
-#define NUM_COORD (3) // define the number of coordinates system -> defines if the localization is 2D or 3D
+#define NUM_COORD (2) // define the number of coordinates system -> defines if the localization is 2D or 3D
 #define SPEED_OF_LIGHT      (299702547.0)     // in m/s in air
 #define MASK_40BIT			(0x00FFFFFFFFFF)  // DW1000 counter is 40 bits
 #define MASK_TXDTS			(0x00FFFFFFFE00)  //The TX timestamp will snap to 8 ns resolution - mask lower 9 bits.
@@ -72,7 +72,7 @@ extern "C" {
 #define TAG_POLL_MSG_LEN                    2				// FunctionCode(1), Range Num (1)
 #define ANCH_RESPONSE_MSG_LEN               8               // FunctionCode(1), Sleep Correction Time (2), Measured_TOF_Time(4), Range Num (1) (previous)
 #define ANCH_REPORT_MSG_LEN                 6               // FunctionCode(1), Range Num (1), Measured_TOF_Time(4)
-#define TAG_LOC_MSG_LEN                     14              // FunctionCode(1), Range Num(1), xPosition (4), yPosition(4), zPosition(4)
+#define TAG_LOC_MSG_LEN                     19              // FunctionCode(1), Range Num(1), xPosition (4), yPosition(4), Valid Response Mask (1), LongTermRange (4), RangeTime (4)
 #define TAG_FINAL_MSG_LEN                   33              // FunctionCode(1), Range Num (1), Poll_TxTime(5),
 															// Resp0_RxTime(5), Resp1_RxTime(5), Resp2_RxTime(5), Resp3_RxTime(5), Final_TxTime(5), Valid Response Mask (1)
 
@@ -143,7 +143,10 @@ extern "C" {
 #define LOC_RNUM                            1
 #define XLOC_POS                            2
 #define YLOC_POS                            6
-#define ZLOC_POS                            10
+#define VRESPLOC                            10
+#define LTRANGE                             14
+#define RANGETIME                           18
+
 
 //this it the delay used for configuring the receiver on delay (wait for response delay)
 //NOTE: this RX_RESPONSE_TURNAROUND is dependent on the microprocessor and code optimisations
@@ -466,6 +469,7 @@ typedef struct
     uint32 saved_rxTimeouts;
     uint8 saved_frameSN;
     int saved_longTermRangeCount;
+
 
 
 
