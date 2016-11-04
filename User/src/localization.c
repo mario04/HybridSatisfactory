@@ -23,7 +23,7 @@ Coordinates coordinates[MAX_ANCHOR_LIST_SIZE]={
 		{23.71,6.33,2.3},    //Anchor0
 		{12.41,4.55,2.3},   //Anchor1
 		{17.97,8.85,1.4},    //Anchor2
-		{16.75,0,0}     //Anchor3
+		{16.75,0,2.3}     //Anchor3
 };
 
 
@@ -132,14 +132,14 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys, localizat
 				  }
 			 }
 
-			 if(info->Nummeasurements > NUM_COORD && info->Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
+			 if(info->Nummeasurements >= NUM_COORD && info->Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
 			 {
 				  LLScoord= LLS(info); // Save the position estimated
 				  if(LLScoord.z > 0)
 					  LLScoord.z = 1.7; // Medium heigh of a person
 				  (PVASys->X).pData[0] = (float32_t) LLScoord.x;
 				  (PVASys->X).pData[1] = (float32_t) LLScoord.y;
-				  (PVASys->X).pData[2] = (float32_t) LLScoord.z;
+				  
 		  
 				  
 
@@ -153,8 +153,8 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys, localizat
 				 //{
 //					 // Coordinates for center of the room
 
-					 (PVASys->X).pData[0] = (float32_t) 7.9545;
-					 (PVASys->X).pData[1] = (float32_t) 16.7495;
+					 (PVASys->X).pData[0] = (float32_t) 0.0;
+					 (PVASys->X).pData[1] = (float32_t) 0.0;
 					 
 					 run = 0; // Initialization has been finished
 				//}
@@ -223,7 +223,7 @@ void Locthread(void const *argument)
 		  }
 		 
 
-		  if(info.Nummeasurements > NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
+		  if(info.Nummeasurements >= NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
 		  {
 
 			  //EKF_PVA(&PVASys,&info,&ins_meas,&DCMbn);
@@ -470,44 +470,58 @@ Coordinates LLS(LocData* Loc)
 	arm_matrix_instance_f32 A, P, AT, product, inverse, result;
 	Array vecA, vecP, vecAT, vecProduct, vecInverse, vecResult;
 
-	initArray(&vecA, ((Loc->Nummeasurements)-1)*NUM_COORD);
+	initArray(&vecA, ((Loc->Nummeasurements)-1)*NUM_COORD2);
 	for(i = 0; i<(Loc->Nummeasurements-1); i++){
 		insertArray(&vecA, (2*((Loc->Coordinates[Loc->AnchorPos[i+1]].x) - (Loc->Coordinates[Loc->AnchorPos[0]].x))));
 		insertArray(&vecA, (2*((Loc->Coordinates[Loc->AnchorPos[i+1]].y) - (Loc->Coordinates[Loc->AnchorPos[0]].y))));
+#if (NUM_COORD2 == 3)
 		insertArray(&vecA, (2*((Loc->Coordinates[Loc->AnchorPos[i+1]].z) - (Loc->Coordinates[Loc->AnchorPos[0]].z))));
+#endif
 	}
-	arm_mat_init_f32(&A,((Loc->Nummeasurements)-1),NUM_COORD, vecA.array);
+	arm_mat_init_f32(&A,((Loc->Nummeasurements)-1),NUM_COORD2, vecA.array);
 
 	initArray(&vecP, ((Loc->Nummeasurements)-1));
 	for(i = 0; i<(Loc->Nummeasurements-1); i++){
+#if NUM_COORD2 == 3
 			insertArray(&vecP, (
 					(Loc->Range[0]*Loc->Range[0]) - (Loc->Range[i+1]*Loc->Range[i+1]) -
 					(((Loc->Coordinates[Loc->AnchorPos[0]].x)*(Loc->Coordinates[Loc->AnchorPos[0]].x)) +
-					((Loc->Coordinates[Loc->AnchorPos[0]].y)*(Loc->Coordinates[Loc->AnchorPos[0]].y)) +
+					((Loc->Coordinates[Loc->AnchorPos[0]].y)*(Loc->Coordinates[Loc->AnchorPos[0]].y)) +	
 					((Loc->Coordinates[Loc->AnchorPos[0]].z)*(Loc->Coordinates[Loc->AnchorPos[0]].z))) +
+
 					(((Loc->Coordinates[Loc->AnchorPos[i+1]].x)*(Loc->Coordinates[Loc->AnchorPos[i+1]].x)) +
 				    ((Loc->Coordinates[Loc->AnchorPos[i+1]].y)*(Loc->Coordinates[Loc->AnchorPos[i+1]].y)) +
 				    ((Loc->Coordinates[Loc->AnchorPos[i+1]].z)*(Loc->Coordinates[Loc->AnchorPos[i+1]].z)))
 				    ));
+#elif NUM_COORD2 == 2
+			insertArray(&vecP, (
+					(Loc->Range[0]*Loc->Range[0]) - (Loc->Range[i+1]*Loc->Range[i+1]) -
+					(((Loc->Coordinates[Loc->AnchorPos[0]].x)*(Loc->Coordinates[Loc->AnchorPos[0]].x)) +
+					((Loc->Coordinates[Loc->AnchorPos[0]].y)*(Loc->Coordinates[Loc->AnchorPos[0]].y))) +
+
+					(((Loc->Coordinates[Loc->AnchorPos[i+1]].x)*(Loc->Coordinates[Loc->AnchorPos[i+1]].x)) +
+				    ((Loc->Coordinates[Loc->AnchorPos[i+1]].y)*(Loc->Coordinates[Loc->AnchorPos[i+1]].y)))
+				    ));
+#endif
 	}
 	arm_mat_init_f32(&P,((Loc->Nummeasurements)-1),1, vecP.array);
 
-	initArray(&vecAT, ((Loc->Nummeasurements)-1)*NUM_COORD);
-	arm_mat_init_f32(&AT,((Loc->Nummeasurements)-1),NUM_COORD, vecAT.array);
+	initArray(&vecAT, ((Loc->Nummeasurements)-1)*NUM_COORD2);
+	arm_mat_init_f32(&AT,((Loc->Nummeasurements)-1),NUM_COORD2, vecAT.array);
 	arm_mat_trans_f32(&A,&AT);
 
-	initArray(&vecProduct, ((Loc->Nummeasurements)-1)*NUM_COORD);
-	arm_mat_init_f32(&product,((Loc->Nummeasurements)-1),NUM_COORD, vecProduct.array);
+	initArray(&vecProduct, ((Loc->Nummeasurements)-1)*NUM_COORD2);
+	arm_mat_init_f32(&product,((Loc->Nummeasurements)-1),NUM_COORD2, vecProduct.array);
 	arm_mat_mult_f32(&AT, &A, &product);
 	freeArray(&vecA);
 
-	initArray(&vecInverse, ((Loc->Nummeasurements)-1)*NUM_COORD);
-	arm_mat_init_f32(&inverse,((Loc->Nummeasurements)-1),NUM_COORD, vecInverse.array);
+	initArray(&vecInverse, ((Loc->Nummeasurements)-1)*NUM_COORD2);
+	arm_mat_init_f32(&inverse,((Loc->Nummeasurements)-1),NUM_COORD2, vecInverse.array);
 	arm_mat_inverse_f32(&product, &inverse);
 	freeArray(&vecProduct);
 
-	initArray(&vecProduct, ((Loc->Nummeasurements)-1)*NUM_COORD);
-	arm_mat_init_f32(&product,((Loc->Nummeasurements)-1),NUM_COORD, vecProduct.array);
+	initArray(&vecProduct, ((Loc->Nummeasurements)-1)*NUM_COORD2);
+	arm_mat_init_f32(&product,((Loc->Nummeasurements)-1),NUM_COORD2, vecProduct.array);
 	arm_mat_mult_f32(&inverse, &AT, &product);
 	freeArray(&vecAT);
 	freeArray(&vecInverse);
@@ -521,10 +535,17 @@ Coordinates LLS(LocData* Loc)
 
 	Coord.x = result.pData[0];
 	Coord.y = result.pData[1];
+#if(NUM_COORD2 == 3)
 	if(Loc->Nummeasurements > 3)
 		Coord.z = result.pData[2];
 	else
 		Coord.z = 0;
+#endif
+
+#if(NUM_COORD2 == 2)
+		Coord.z = 0;
+#endif
+
 
 	freeArray(&vecResult);
 	return Coord;

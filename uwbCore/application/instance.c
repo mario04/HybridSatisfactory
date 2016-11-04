@@ -30,7 +30,7 @@
 // NOTE: the maximum RX timeout is ~ 65ms
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#define LCD_BUFF_LEN (100)
+#define LCD_BUFF_LEN (200)
 uint8 dataseq[LCD_BUFF_LEN];
 
 // -------------------------------------------------------------------------------------------------------------------
@@ -208,12 +208,29 @@ int testapprun(instance_data_t *inst, int message)
                 break;
                 case LISTENER:
                 {
+
+                    // memcpy(inst->eui64, &inst->instanceAddress16, ADDR_BYTE_SIZE_S);
+                    // dwt_seteui(inst->eui64);
+
+                    // dwt_setpanid(inst->panID);
+
+                    // //set source address
+                    // inst->shortAdd_idx = (inst->instanceAddress16 & 0x3) ;
+                    // dwt_setaddress16(inst->instanceAddress16);
+
                     dwt_enableframefilter(DWT_FF_NOTYPE_EN); //disable frame filtering
 					dwt_setrxaftertxdelay(0); //no delay of turning on of RX
                     dwt_setrxtimeout(0);
                     dwt_setpreambledetecttimeout(0);
+                    //instanceconfigframeheader16(inst);
                     //change to next state - wait to receive a message
                     inst->testAppState = TA_RXE_WAIT ;
+                    inst->instToSleep == FALSE;
+                    inst->CoopMode = FALSE;
+                    inst->TimeToChangeToAnch = FALSE;
+                    inst->TimeToChangeToTag = FALSE;
+                    inst->GW.newReport = FALSE;
+                    inst->GW.function_code = 0;
                 }
                 break ; // end case TA_INIT
                 default:
@@ -401,8 +418,6 @@ int testapprun(instance_data_t *inst, int message)
 
 				dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED); //transmit the frame
 
-                inst->monitor = 1;
-                inst->timeofTx = portGetTickCount();
 
                 inst->testAppState = TA_TX_WAIT_CONF ;  // wait confirmation
                 inst->previousState = TA_TXPOLL_WAIT_SEND ;                
@@ -536,20 +551,21 @@ int testapprun(instance_data_t *inst, int message)
             evt = osMessageGet(MsgLoc,osWaitForever);
 
 
-
             if (evt.status == osEventMessage)
             {
 
                 loc = evt.value.p;
 
-                sprintf((char*)&dataseq[0], "TX: %3.2f m TY:%3.2f m ", loc->estPos[0], loc->estPos[1]);
+//                 sprintf((char*)&dataseq[0], "TX: %3.2f m TY:%3.2f m ", loc->estPos[0], loc->estPos[1]);
+
+// //                  toggle = 1;
+//                     uartWriteLineNoOS((char *) dataseq); //send some data
+                if ((loc->estPos[0] != 0.0) && (loc->estPos[1] != 0.0) )
+                {
+                        sprintf((char*)&dataseq[0], "TX: %3.2f m TY:%3.2f m ", loc->estPos[0], loc->estPos[1]);
 
 //                  toggle = 1;
                     uartWriteLineNoOS((char *) dataseq); //send some data
-
-                if ((loc->estPos[0] != 0.0) && (loc->estPos[1] != 0.0) )
-                {
-
 
                     inst->anch_pos_estimation[0] = loc->estPos[0];
                     inst->anch_pos_estimation[1] = loc->estPos[1];
@@ -571,7 +587,7 @@ int testapprun(instance_data_t *inst, int message)
                     memcpy(&(inst->msg_f.messageData[LTRANGE]), &l, 4);
                     memcpy(&(inst->msg_f.messageData[RANGETIME]), &r, 4);
 
-                    inst->msg_f.messageData[VRESPLOC] = inst->rxResponseMaskReport;
+                    inst->msg_f.messageData[VRESPLOC] = inst->rxReportMaskReport;
 
 
                     inst->psduLength = (TAG_LOC_MSG_LEN + FRAME_CRTL_AND_ADDRESS_S + FRAME_CRC);
@@ -588,6 +604,7 @@ int testapprun(instance_data_t *inst, int message)
                     //if(instancesenddlypacket(inst, DWT_START_TX_IMMEDIATE))
                         
                     {
+
                         // initiate the re-transmission
                         if(inst->mode == TAG)
                         {
@@ -684,8 +701,9 @@ int testapprun(instance_data_t *inst, int message)
             inst->delayedReplyTime = inst->saved_delayedReplyTime;
             inst->rxTimeouts = inst->saved_rxTimeouts;
             inst->frameSN = inst->saved_frameSN;
+            inst->rxReportMaskReport = inst->saved_rxReportMaskReport; 
             inst->longTermRangeCount = inst->saved_longTermRangeCount;
-
+            
         }
         break;
 
@@ -843,6 +861,7 @@ int testapprun(instance_data_t *inst, int message)
 
             if(inst->wait4ack == 0) //if this is set the RX will turn on automatically after TX
             {
+            
                 //turn RX on
             	dwt_rxenable(DWT_START_RX_IMMEDIATE) ;  // turn RX on, without delay
             }
@@ -852,10 +871,9 @@ int testapprun(instance_data_t *inst, int message)
                 inst->wait4ack = 0 ; //clear the flag, the next time we want to turn the RX on it might not be auto
             }
 
-            if (inst->mode != LISTENER)
-            {
+           
             	inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT; //using RX FWTO
-            }
+            
 
             inst->testAppState = TA_RX_WAIT_DATA;   // let this state handle it
 
@@ -871,6 +889,7 @@ int testapprun(instance_data_t *inst, int message)
 
         case TA_RX_WAIT_DATA : // Wait RX data
         {
+
             if(inst->CoopMode == TRUE){
                 inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
                 inst->stopTimer = 0; //clear the flag, as we have received a message
@@ -933,9 +952,39 @@ int testapprun(instance_data_t *inst, int message)
 
 					if((inst->instToSleep == FALSE) && (inst->mode == LISTENER))//update received data, and go back to receiving frames
 					{
-						//do something with message data (e.g. could extract any ToFs and print them)
-						inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
-						dwt_setrxaftertxdelay(0);
+                    
+                        //do something with message data (e.g. could extract any ToFs and print them)
+                         inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
+                        dwt_setrxaftertxdelay(0);
+                        uint32 tagPosx = 0;
+                        uint32 tagPosy = 0;
+                        int ltrange = 0;
+                        int rangeTime = 0;
+                        if(fn_code == RTLS_DEMO_MSG_TAG_LOC ){
+                            inst->GW.function_code = RTLS_DEMO_MSG_TAG_LOC;
+                            inst->GW.rangeNum = messageData[LOC_RNUM];
+                            memcpy(&tagPosx, &(messageData[XLOC_POS]), 4);
+                            memcpy(&tagPosy, &(messageData[YLOC_POS]), 4);
+                            inst->GW.tagxpos = tagPosx/1000.0;
+                            inst->GW.tagypos = tagPosy/1000.0;
+                            inst->GW.vresploc = messageData[VRESPLOC];
+                            memcpy(&ltrange, &(messageData[LTRANGE]), 4);
+                            memcpy(&rangeTime, &(messageData[RANGETIME]), 4);
+                            inst->GW.ltrange = ltrange;
+                            inst->GW.rangeTime = rangeTime;
+                            inst->GW.newReport = TRUE;
+                            inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
+
+                            sprintf((char*)&dataseq[0], "mc %x %3.3f %3.3f %04x %02x %08x %c%d\r\n",
+                                            instance_data[0].GW.vresploc, instance_data[0].GW.tagxpos ,instance_data[0].GW.tagypos,
+                                                instance_data[0].GW.ltrange, instance_data[0].GW.rangeNum,instance_data[0].GW.rangeTime,
+                                                't', instance_data[0].GW.tagAddr);
+                             uartWriteLineNoOS((char *) dataseq); //send some data
+                            instanceclearLOC_MSG();
+
+
+
+                        }               
 					}
 					else
                     {

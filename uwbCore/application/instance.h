@@ -28,7 +28,7 @@ extern "C" {
 //DEEP_SLEEP mode can be used, for example, by a Tag instance to put the DW1000 into low-power deep-sleep mode:
 // when the Anchor is sending the range report back to the Tag, the Tag will enter sleep after a ranging exchange is finished
 // once it receives a report or times out, before the next poll message is sent (before next ranging exchange is started).
-
+#define GATEWAY_NEWFIRM     (0)
 #define CORRECT_RANGE_BIAS  (1)     // Compensate for small bias due to uneven accumulator growth at close up high power
 #define WATCH_REPORT    (1)         // Send data for serial port and show the TOF value
 #define REPORT_IMP      (1)              //Report messages implementation. Tag will receive the TOF value from anchor in the slot time
@@ -50,7 +50,8 @@ extern "C" {
 *******************************************************************************************************************/
 
 #define NUM_INST            1
-#define NUM_COORD (2) // define the number of coordinates system -> defines if the localization is 2D or 3D
+#define NUM_COORD (3) // define the number of coordinates system -> defines if the localization is 2D or 3D
+#define NUM_COORD2 (2)
 #define SPEED_OF_LIGHT      (299702547.0)     // in m/s in air
 #define MASK_40BIT			(0x00FFFFFFFFFF)  // DW1000 counter is 40 bits
 #define MASK_TXDTS			(0x00FFFFFFFE00)  //The TX timestamp will snap to 8 ns resolution - mask lower 9 bits.
@@ -144,8 +145,8 @@ extern "C" {
 #define XLOC_POS                            2
 #define YLOC_POS                            6
 #define VRESPLOC                            10
-#define LTRANGE                             14
-#define RANGETIME                           18
+#define LTRANGE                             11
+#define RANGETIME                           15
 
 
 //this it the delay used for configuring the receiver on delay (wait for response delay)
@@ -272,7 +273,19 @@ typedef struct
 /******************************************************************************************************************
 *******************************************************************************************************************
 *******************************************************************************************************************/
+typedef struct
+{
+    uint8 function_code;
+    uint8 rangeNum;
+    float tagxpos;
+    float tagypos;
+    uint8 vresploc;
+    int ltrange;
+    int rangeTime;
+    uint8 newReport;
+    uint8 tagAddr;
 
+}LOC_MSG;
 //size of the event queue, in this application there should be at most 2 unprocessed events,
 //i.e. if there is a transmission with wait for response then the TX callback followed by RX callback could be executed
 //in turn and the event queued up before the instance processed the TX event.
@@ -397,6 +410,8 @@ typedef struct
 	uint8   rxResponseMaskAnc;
 	uint8   rxResponseMask;			// bit mask - bit 0 = received response from anchor ID = 0, bit 1 from anchor ID = 1 etc...
 	uint8   rxResponseMaskReport;
+    uint8   saved_rxResponseMaskReport;
+    uint8   saved_rxReportMaskReport;
 	uint8	rangeNum;				// incremented for each sequence of ranges (each slot)
 	uint8	rangeNumA[MAX_TAG_LIST_SIZE];				// array which holds last range number from each tag
 	uint8	rangeNumAnc;			// incremented for each sequence of ranges (each slot) - anchor to anchor ranging
@@ -470,7 +485,7 @@ typedef struct
     uint8 saved_frameSN;
     int saved_longTermRangeCount;
 
-
+    LOC_MSG GW;
 
 
 } instance_data_t ;

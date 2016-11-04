@@ -20,6 +20,7 @@
 // -------------------------------------------------------------------------------------------------------------------
 //      Data Definitions
 // -------------------------------------------------------------------------------------------------------------------
+uint8 dataseq[100];
 
 // -------------------------------------------------------------------------------------------------------------------
 
@@ -141,7 +142,18 @@ void instancecleardisttableall(void)
 		inst_idist[i] = 0xffff;
 	}
 }
-
+void instanceclearLOC_MSG(void)
+{
+    instance_data[0].GW.function_code =  0;
+    instance_data[0].GW.rangeNum =  0;
+    instance_data[0].GW.newReport =  FALSE;
+    instance_data[0].GW.ltrange =  0;
+    instance_data[0].GW.rangeTime =  0;
+    instance_data[0].GW.vresploc =  0;
+    instance_data[0].GW.tagxpos =  0;
+    instance_data[0].GW.tagypos =  0;
+    instance_data[0].GW.tagAddr = 0;
+}
 // -------------------------------------------------------------------------------------------------------------------
 #if NUM_INST != 1
 #error These functions assume one instance only
@@ -1179,7 +1191,6 @@ void ancpreparereport(uint16 sourceAddress, uint8 srcAddr_index, uint8 fcode_ind
 void instance_rxcallback(const dwt_callback_data_t *rxd)
 {
 
-
 	int instance = 0;
 	uint8 rxTimeStamp[5]  = {0, 0, 0, 0, 0};
 
@@ -1336,6 +1347,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
                     	//we are a tag
 					    if(instance_data[instance].mode == TAG)
 					    {
+
 							uint8 index ;
 							instance_data[instance].responseTO--;
 							instance_data[instance].rxResps[instance_data[instance].rangeNum]++;
@@ -1458,7 +1470,14 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
                     case RTLS_DEMO_MSG_TAG_LOC:
                     {
-                        
+                        if(sourceAddress&0x7 == 0){
+                        sprintf((char*)&dataseq[0], "Tag0");
+                        uartWriteLineNoOS((char *) dataseq); //send some data
+                        }
+                        else {
+                             sprintf((char*)&dataseq[0], "Tag %d", sourceAddress&0x7);
+                        uartWriteLineNoOS((char *) dataseq); //send some data
+                        }
                          if((instance_data[instance].mode == ANCHOR) && (instance_data[instance].shortAdd_idx != (A3_ANCHOR_ADDR & 0x3)))
                          {
                             
@@ -1505,6 +1524,39 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
 				}
 			}//end of if not Listener mode
+            else{
+
+                if (RTLS_DEMO_MSG_TAG_LOC == dw_event.msgu.frame[fcode_index])
+                {
+                     instance_data[instance].GW.tagAddr = sourceAddress&0x7;
+                    // if(instance_data[instance].GW.tagAddr == 0)
+                    // {
+                    //     sprintf((char*)&dataseq[0], "Tag0");
+                    //     uartWriteLineNoOS((char *) dataseq); //send some data
+
+                    // }
+                    // else if(instance_data[instance].GW.tagAddr == 2)
+                    // {
+                    //     sprintf((char*)&dataseq[0], "Tagn");
+                    //     uartWriteLineNoOS((char *) dataseq); //send some data
+
+
+                    // // }
+                        if(sourceAddress&0x7 == 0){
+                        sprintf((char*)&dataseq[0], "Tag0");
+                        uartWriteLineNoOS((char *) dataseq); //send some data
+                        }
+                        else {
+                             sprintf((char*)&dataseq[0], "Tag %d", sourceAddress&0x7);
+                        uartWriteLineNoOS((char *) dataseq); //send some data
+                        }
+                    
+                }
+                
+
+                                       
+            }
+
 	    	instance_data[instance].stopTimer = 1;
 
             instance_putevent(dw_event, rxd_event);
@@ -1756,10 +1808,12 @@ int instance_run(void)
                  instance_data[instance].saved_rxTimeouts = instance_data[instance].rxTimeouts;
                  instance_data[instance].saved_frameSN = instance_data[instance].frameSN;
                  instance_data[instance].saved_longTermRangeCount = instance_data[instance].longTermRangeCount;
+                 instance_data[instance].saved_rxReportMaskReport = instance_data[instance].rxReportMaskReport;
+                 
 
                  instanceclearcounts();
                 
-
+                 
         }
 
         }

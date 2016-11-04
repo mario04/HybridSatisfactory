@@ -42,20 +42,28 @@
 #define SWITCH_ON 			TRUE
 #define SWITCH_OFF 			FALSE
 #define BUTTON_0			FALSE
-#define TA_SW1_3			FALSE
+#define TA_SW1_3			TRUE
 
 
-#if TAG_DEVICE
+#if TAG_DEVICE 
  				#define TA_SW1_4			FALSE
 #else
 				#define TA_SW1_4			TRUE		/* FALSE: Tag - TRUE: Anchor */
 #endif
 
+#if GATEWAY_NEWFIRM
+
+#define TA_SW1_5			TRUE
+#define TA_SW1_6			FALSE
+#define TA_SW1_7			FALSE
+
+#else
 //Address
 #define TA_SW1_5			FALSE
-#define TA_SW1_6			FALSE
-#define TA_SW1_7			TRUE
+#define TA_SW1_6			TRUE
+#define TA_SW1_7			FALSE
 
+#endif
 
 
 #define TA_SW1_8			FALSE
@@ -159,11 +167,11 @@ sfConfig_t sfConfig[4] ={
 
 	/*	In order to fix the slot times after report implementation change the superframe and poll sleep times below for 10*50. Try to change only the poll sleep delay*/
 		{
-				(68), //ms -
-				(10),   //thus 10 slots - thus 280ms superframe means 3.57 Hz location rate (10 slots are needed as AtoA ranging takes 30+ ms)
+				(70), //ms -
+				(4),   //thus 10 slots - thus 280ms superframe means 3.57 Hz location rate (10 slots are needed as AtoA ranging takes 30+ ms)
 				//(10*28), //superframe period
-				(10*28),
-				(10*28), //poll sleep delay
+				(4*70),
+				(4*70), //poll sleep delay
 				//(10*50), // around 46 ms is taken one slot time with the report implementation
 				(20000)
 		},
@@ -177,10 +185,10 @@ sfConfig_t sfConfig[4] ={
 		},
 		//mode 3 - S1: 2 off, 3 on
 		{
-				(28),    // slot period ms
-				(10),     // thus 10 slots - thus 280ms superframe means 3.57 Hz location rate
-				(10*28),  // superframe period
-				(10*28),  // poll sleep delay
+				(70),    // slot period ms
+				(4),     // thus 10 slots - thus 280ms superframe means 3.57 Hz location rate
+				(4*70),  // superframe period
+				(4*70),  // poll sleep delay
 				(20000)
 		},
 		//mode 4 - S1: 2 on, 3 on
@@ -295,7 +303,7 @@ uint32 inittestapplication(uint8 s1switch)
 
 	addressconfigure(s1switch, instance_mode) ;                            // set up initial payload configuration
 
-	if((instance_mode == ANCHOR) && (instance_anchaddr > 0x4))
+	if((instance_mode == ANCHOR) && (instance_anchaddr > 0x3))
 	{
 		instance_mode = LISTENER;
 	}
@@ -538,6 +546,21 @@ void UwbMainTask(void const * argument)
 			instance_data[0].monitor = 0;
 		}
 
+#if GATEWAY_NEWFIRM
+
+  //       if((instance_data[0].GW.function_code == RTLS_DEMO_MSG_TAG_LOC) && (instance_data[0].GW.newReport == TRUE)){
+        	
+  //   	sprintf((char*)&dataseq[0], "mc %x %3.3f %3.3f %04x %02x %08x %c%d\r\n",
+		// 									instance_data[0].GW.vresploc, instance_data[0].GW.tagxpos ,instance_data[0].GW.tagypos,
+		// 										instance_data[0].GW.ltrange, instance_data[0].GW.rangeNum,instance_data[0].GW.rangeTime,
+		// 										't', instance_data[0].GW.tagAddr);
+		// uartWriteLineNoOS((char *) dataseq); //send some data
+  //       instanceclearLOC_MSG();
+        
+//}
+
+#else
+
 		
 #if WATCH_REPORT
 		rx = instancenewrangeReport();
@@ -655,7 +678,7 @@ void UwbMainTask(void const * argument)
 #endif
 		} //if new range present
 
-
+#endif
  	osThreadYield(); // Give the power to other task, it has finished the ranging task
 
  	}

@@ -39,7 +39,7 @@ extern osMessageQId  MsgLoc;
 #define PRINT_INS (0) // 1-Enable 0-Disable, Print the Inertial measurements
 #define PRINT_POS (0) // 1-Enable 0-Disable, to print the estimated position
 
-#define COOPERATIVE (0) // Enable or disable the Cooperative approach
+#define COOPERATIVE (1) // Enable or disable the Cooperative approach
 #define HYBRID (1) // Enable or disable the Hybrid Algorithm
 
 #define PVA_MODEL (0)
