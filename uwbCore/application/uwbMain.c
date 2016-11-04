@@ -60,7 +60,7 @@
 #else
 //Address
 #define TA_SW1_5			FALSE
-#define TA_SW1_6			TRUE
+#define TA_SW1_6			FALSE
 #define TA_SW1_7			FALSE
 
 #endif
@@ -167,11 +167,11 @@ sfConfig_t sfConfig[4] ={
 
 	/*	In order to fix the slot times after report implementation change the superframe and poll sleep times below for 10*50. Try to change only the poll sleep delay*/
 		{
-				(70), //ms -
-				(4),   //thus 10 slots - thus 280ms superframe means 3.57 Hz location rate (10 slots are needed as AtoA ranging takes 30+ ms)
+				(28), //ms -
+				(10),   //thus 10 slots - thus 280ms superframe means 3.57 Hz location rate (10 slots are needed as AtoA ranging takes 30+ ms)
 				//(10*28), //superframe period
-				(4*70),
-				(4*70), //poll sleep delay
+				(28*10),
+				(28*10), //poll sleep delay
 				//(10*50), // around 46 ms is taken one slot time with the report implementation
 				(20000)
 		},
@@ -506,10 +506,6 @@ void UwbMainTask(void const * argument)
 		int monitor_local = instance_data[0].monitor ;
 		int txdiff = (portGetTickCnt() - instance_data[0].timeofTx);
 
-		#if TAG_DEVICE
-			//osThreadYield();
-		#endif
-
 
 		instance_run();
 		instance_mode = instancegetrole();
@@ -562,17 +558,20 @@ void UwbMainTask(void const * argument)
 #else
 
 		
-#if WATCH_REPORT
+#if REPORT_IMP
+	#if TAG_DEVICE
 		rx = instancenewrangeReport();
-		//rx = instancenewrange();
+	#else
+		rx = instancenewrange();
+	#endif
 #else
 
 		rx = instancenewrange();
 #endif
 
 
-		// if(rx != TOF_REPORT_NUL)
-		// {
+		 if(rx != TOF_REPORT_NUL)
+		 {
 
 			// if(instance_mode == TAG)
 			// {
@@ -585,23 +584,23 @@ void UwbMainTask(void const * argument)
 
 		//if there is a new ranging report received or a new range has been calculated, then prepare data
 		//to output over USB - Virtual COM port, and update the LCD
-		if(rx != TOF_REPORT_NUL)
-		{
+		// if(rx != TOF_REPORT_NUL)
+		// {
 
-			if(instance_mode == TAG)
-			{
-				dataqueue.Range=&inst_idist[0];
-				dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation[0];
+		// 	if(instance_mode == TAG)
+		// 	{
+		// 		dataqueue.Range=&inst_idist[0];
+		// 		dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation[0];
 
-				osMessagePut(MsgUwb,&dataqueue, osWaitForever);
+		// 		osMessagePut(MsgUwb,&dataqueue, osWaitForever);
 				
 
 
 				
-			}
+		// 	}
 
 
-#if (TAG_DEVICE == 0)
+
 
 			int r= 0, aaddr, taddr; //l = 0,
 			int rangeTime, valid;
@@ -648,8 +647,6 @@ void UwbMainTask(void const * argument)
 				else if(instance_mode == TAG)
 				{
 					sprintf((char*)&dataseq[0], "T%d A%d: %3.2f m", tagaddr, toggle, instancegetidist(toggle));
-
-//					toggle = 1;
 					uartWriteLineNoOS((char *) dataseq); //send some data
 
 					toggle++;
@@ -675,10 +672,10 @@ void UwbMainTask(void const * argument)
 				//update the print time
 				printTWRReports = portGetTickCnt();
 			}
-#endif
-		} //if new range present
 
+		} //if new range present
 #endif
+
  	osThreadYield(); // Give the power to other task, it has finished the ranging task
 
  	}

@@ -490,6 +490,7 @@ double instancegetidist(int idx) //get instantaneous range
     idx &= (MAX_ANCHOR_LIST_SIZE - 1);
 
     x = inst_idist[idx];
+    
 
     return (x);
 }
@@ -1766,7 +1767,7 @@ int instance_run(void)
         	instance_data[instance].tagSleepCorrection2 = instance_data[instance].tagSleepCorrection;
         	instance_data[instance].tagSleepCorrection = 0; //clear the correction
             instance_data[instance].instanceTimerEn = 1; //start timer
-
+#if COOP_IMP
         if(instance_data[instance].testAppState != TA_SLEEP_DONE){
 
 
@@ -1815,6 +1816,7 @@ int instance_run(void)
                 
                  
         }
+#endif
 
         }
         instance_data[instance].stopTimer = 0 ; //clear the flag - timer can run if instancetimer_en set (set above)

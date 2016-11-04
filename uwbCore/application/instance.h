@@ -30,8 +30,8 @@ extern "C" {
 // once it receives a report or times out, before the next poll message is sent (before next ranging exchange is started).
 #define GATEWAY_NEWFIRM     (0)
 #define CORRECT_RANGE_BIAS  (1)     // Compensate for small bias due to uneven accumulator growth at close up high power
-#define WATCH_REPORT    (1)         // Send data for serial port and show the TOF value
-#define REPORT_IMP      (1)              //Report messages implementation. Tag will receive the TOF value from anchor in the slot time
+#define REPORT_IMP      (0)              //Report messages implementation. Tag will receive the TOF value from anchor in the slot time
+#define COOP_IMP    (0)
 // Anchor
 //     WATCH_REPORT = 0; REPORT_IMP = 0 
 //     WATCH_REPORT = 0; REPORT_IMP = 1

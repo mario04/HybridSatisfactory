@@ -30,7 +30,7 @@
 // NOTE: the maximum RX timeout is ~ 65ms
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#define LCD_BUFF_LEN (200)
+#define LCD_BUFF_LEN (100)
 uint8 dataseq[LCD_BUFF_LEN];
 
 // -------------------------------------------------------------------------------------------------------------------
@@ -334,7 +334,7 @@ int testapprun(instance_data_t *inst, int message)
 					dwt_entersleep(); //go to sleep
 #endif
 					//DW1000 gone to sleep - report the received range
-#if WATCH_REPORT
+#if REPORT_IMP
                     inst->newReportRange = instance_calcranges(&inst->tofArray_reported[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxReportMask);
                     inst->rxReportMaskReport = inst->rxReportMask;
                     inst->rxReportMask = 0;
@@ -438,7 +438,7 @@ int testapprun(instance_data_t *inst, int message)
                 inst->psduLength = (TAG_FINAL_MSG_LEN + FRAME_CRTL_AND_ADDRESS_S + FRAME_CRC);
                 inst->msg_f.seqNum = inst->frameSN++;
 				dwt_writetxdata(inst->psduLength, (uint8 *)  &inst->msg_f, 0) ;	// write the frame data
-
+                inst->instToSleep = TRUE ;
 				inst->wait4ack = 0; //clear the flag not using wait for response as this message ends the ranging exchange
 #if REPORT_IMP
 				if(inst->mode == TAG)
@@ -485,14 +485,7 @@ int testapprun(instance_data_t *inst, int message)
                     inst->previousState = TA_TXFINAL_WAIT_SEND;
 
                 }
-#if (REPORT_IMP==0)
-            	if(inst->mode == TAG)
-            	{
 
-            		inst->instToSleep = TRUE ;
-
-            	}
-#endif
 				inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT; //will use RX FWTO to time out (set above)
             }
             break;
@@ -1118,6 +1111,7 @@ int testapprun(instance_data_t *inst, int message)
 										//the correct range number but the range will be INVALID_TOF
 										if(inst->tofArray[(srcAddr[0]&0x3)] != INVALID_TOF)
 										{
+
 											inst->rxResponseMask |= (0x1 << (srcAddr[0]&0x3));
 										}
 
@@ -1333,7 +1327,7 @@ int testapprun(instance_data_t *inst, int message)
 									printf("FinalRx Timestamp: %4.15e\n", convertdevicetimetosecu(dw_event.timeStamp));
 #endif
 */
-#if REPORT_IMP == 0
+#if (REPORT_IMP == 0)
 									inst->delayedReplyTime = 0 ;
 #endif
 									// times measured at Tag extracted from the message buffer
