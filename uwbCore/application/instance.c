@@ -127,7 +127,8 @@ int testapprun(instance_data_t *inst, int message)
 
     switch (inst->testAppState)
     {
-        case TA_INIT :
+        case TA_INIT :     
+
             switch (inst->mode)
             {
                 case TAG:
@@ -238,6 +239,7 @@ int testapprun(instance_data_t *inst, int message)
 
         case TA_SLEEP_DONE :
         {
+
         	event_data_t* dw_event = instance_getevent(10); //clear the event from the queue
 
 			// waiting for timout from application to wakup IC
@@ -318,6 +320,7 @@ int testapprun(instance_data_t *inst, int message)
         case TA_TXE_WAIT : //either go to sleep or proceed to TX a message
             //if we are scheduled to go to sleep before next transmission then sleep first.
         {
+       
         	if((inst->nextState == TA_TXPOLL_WAIT_SEND) && (inst->instToSleep))  //go to sleep before sending the next poll/ starting new ranging exchange)
             {
             	inst->rangeNum++; //increment the range number before going to sleep
@@ -381,7 +384,8 @@ int testapprun(instance_data_t *inst, int message)
 
         case TA_TXPOLL_WAIT_SEND :
             {
-                
+  
+
                 inst->msg_f.messageData[POLL_RNUM] = (inst->mode == TAG) ? inst->rangeNum : inst->rangeNumAnc; //copy new range number
             	inst->msg_f.messageData[FCODE] = (inst->mode == TAG) ? RTLS_DEMO_MSG_TAG_POLL : RTLS_DEMO_MSG_ANCH_POLL; //message function code (specifies if message is a poll, response or other...)
                 inst->psduLength = (TAG_POLL_MSG_LEN + FRAME_CRTL_AND_ADDRESS_S + FRAME_CRC);
@@ -427,8 +431,7 @@ int testapprun(instance_data_t *inst, int message)
 
         case TA_TXFINAL_WAIT_SEND :
             {
-
-
+   
             	//the final has the same range number as the poll (part of the same ranging exchange)
                 inst->msg_f.messageData[POLL_RNUM] = (inst->mode == TAG) ? inst->rangeNum : inst->rangeNumAnc;
                 //the mask is sent so the anchors know whether the response RX time is valid
@@ -492,7 +495,7 @@ int testapprun(instance_data_t *inst, int message)
 #if REPORT_IMP
         case TA_TXREPORT_WAIT_SEND:
         {
-
+        
             uint8 flagEvent;
         	memcpy(&(inst->msg_f.messageData[TOFREP]), &inst->tofArray[inst->shortAdd_idx], 4);
             dwt_writetxfctrl(inst->psduLength, 0);
@@ -534,6 +537,7 @@ int testapprun(instance_data_t *inst, int message)
         	break;
 
         case TA_TXLOC_WAIT_SEND:{
+        
             osEvent  evt;
             localization_data * loc;
             uint32 tagPosx, tagPosy;
@@ -646,7 +650,7 @@ int testapprun(instance_data_t *inst, int message)
 
         case TA_REPORT_END:
         {
-
+        
             inst->delayedReplyTime = 0;
             if(inst->rxRep[inst->rxRepIdx] >= 0)
             {
@@ -701,6 +705,7 @@ int testapprun(instance_data_t *inst, int message)
 #endif
         case TA_TX_WAIT_CONF :
                 {
+       
 				event_data_t* dw_event = instance_getevent(11); //get and clear this event
 
                 //NOTE: Can get the ACK before the TX confirm event for the frame requesting the ACK
@@ -845,7 +850,7 @@ int testapprun(instance_data_t *inst, int message)
 
         case TA_RXE_WAIT :
         {
-
+       
 
             if(inst->wait4ack == 0) //if this is set the RX will turn on automatically after TX
             {
@@ -877,7 +882,7 @@ int testapprun(instance_data_t *inst, int message)
 
         case TA_RX_WAIT_DATA : // Wait RX data
         {
-
+       
             // if(inst->CoopMode == TRUE){
             //     //inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
             //     inst->stopTimer = 0; //clear the flag, as we have received a message
@@ -988,6 +993,7 @@ int testapprun(instance_data_t *inst, int message)
                             case RTLS_DEMO_MSG_ANCH_POLL:
                             case RTLS_DEMO_MSG_TAG_POLL:
                             {
+        
                 				inst->tagPollRxTime = dw_event->timeStamp ; //save Poll's Rx time
                 				if(fcode == RTLS_DEMO_MSG_TAG_POLL) //got poll from Tag
                 				{
@@ -1036,8 +1042,7 @@ int testapprun(instance_data_t *inst, int message)
                             case RTLS_DEMO_MSG_ANCH_RESP2:
                             case RTLS_DEMO_MSG_ANCH_RESP:
                             {
-
-
+       
                             	uint8 currentRangeNum = (messageData[TOFRN] + 1); //current = previous + 1
 
                             	if(GATEWAY_ANCHOR_ADDR == (srcAddr[0] | ((uint32)(srcAddr[1] << 8)))) //if response from gateway then use the correction factor
@@ -1155,8 +1160,7 @@ int testapprun(instance_data_t *inst, int message)
 #if REPORT_IMP
                             case RTLS_DEMO_MSG_ANCH_REPORT:
                             {
-
-
+       
                             	uint8 currentRangeNum = (messageData[REPORT_RNUM]);
                                 if(dw_event->type_pend == DWT_SIG_TX_PENDING)
                                 {
@@ -1231,7 +1235,7 @@ int testapprun(instance_data_t *inst, int message)
 
                             case RTLS_DEMO_MSG_TAG_LOC:
                             {
-
+        
                                 if(inst->mode == ANCHOR) //tag should ignore any other Final from anchors
                                 {
  
@@ -1282,7 +1286,7 @@ int testapprun(instance_data_t *inst, int message)
                             case RTLS_DEMO_MSG_ANCH_FINAL:
                             case RTLS_DEMO_MSG_TAG_FINAL:
                             {
-                                
+                        
                                 int64 Rb, Da, Ra, Db ;
                                 uint64 tagFinalTxTime  = 0;
                                 uint64 tagFinalRxTime  = 0;
@@ -1420,6 +1424,7 @@ int testapprun(instance_data_t *inst, int message)
 
                             default:
                             {
+       
                                 //only enable receiver when not using double buffering
                                 inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
 								dwt_setrxaftertxdelay(0);
@@ -1440,6 +1445,7 @@ int testapprun(instance_data_t *inst, int message)
 
                 case DWT_SIG_RX_TIMEOUT :
                 	{
+        
                 		event_data_t* dw_event = instance_getevent(17); //get and clear this event
 
                 		//Anchor can time out and then need to send response - so will be in TX pending
@@ -1461,6 +1467,7 @@ int testapprun(instance_data_t *inst, int message)
 				case 0:
 				default :
                 {
+        
                     if(message) // == DWT_SIG_TX_DONE)
                     {
                     	inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;

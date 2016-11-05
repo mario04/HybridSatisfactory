@@ -578,12 +578,22 @@ void inst_processrxtimeout(instance_data_t *inst)
             inst->testAppState = TA_TXPOLL_WAIT_SEND;
        		//initiate the re-transmission of the poll that was not responded to
         #else
-			inst->testAppState = TA_TXE_WAIT ;
-			inst->nextState = TA_TXLOC_WAIT_SEND ; 
-            inst->newReportRange = instance_calcranges(&inst->tofArray_reported[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxReportMask);
-            inst->rxReportMaskReport = inst->rxReportMask;
-            inst->rxReportMask = 0;
-            inst->newRangeTime = portGetTickCount() ;
+
+            #if COOP_IMP   
+                inst->testAppState = TA_TXE_WAIT ;
+                inst->nextState = TA_TXLOC_WAIT_SEND ; 
+                inst->newReportRange = instance_calcranges(&inst->tofArray_reported[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxReportMask);
+                inst->rxReportMaskReport = inst->rxReportMask;
+                inst->rxReportMask = 0;
+                inst->newRangeTime = portGetTickCount() ;
+            #else
+                dwt_forcetrxoff();
+                inst->testAppState = TA_TXE_WAIT ; //go to TA_TXE_WAIT first to check if it's sleep time
+                inst->nextState = TA_TXPOLL_WAIT_SEND ;
+                inst->instToSleep = TRUE;
+            #endif
+
+            
         #endif
 
             // Process Also when the report message is implemented
@@ -1033,9 +1043,19 @@ void handle_error_unknownframe(event_data_t dw_event)
 	}
 	else
 	{
-		instance_data[instance].responseTO--; //got something (need to reduce timeout (for remaining responses))
+        if (instance_data[instance].responseTO > 0){
+	       	instance_data[instance].responseTO--; //got something (need to reduce timeout (for remaining responses))
 
-		dw_event.type_pend = tagrxreenable(0); //check if receiver will be re-enabled or it's time to send the final
+		      dw_event.type_pend = tagrxreenable(0); //check if receiver will be re-enabled or it's time to send the final
+        }
+
+         if (instance_data[instance].reportTO > 0){
+             instance_data[instance].reportTO--; //got something (need to reduce timeout (for remaining responses))
+
+             dw_event.type_pend = tagrxreenableRep(0); //check if receiver will be re-enabled or it's time to send the final
+             instance_data[instance].test = 1;
+         }
+
 		dw_event.type = 0;
 		dw_event.type_save = 0x40 | DWT_SIG_RX_TIMEOUT;
 		dw_event.rxLength = 0;
@@ -1439,7 +1459,6 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 #if REPORT_IMP
  					case RTLS_DEMO_MSG_ANCH_REPORT:
  					{
-
                        
                         if(instance_data[instance].mode == TAG){
      						instance_data[instance].reportTO--;
