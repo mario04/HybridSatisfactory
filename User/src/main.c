@@ -42,7 +42,7 @@
 #include "dma.h"
 #include "gpio.h"
 #include "rgbLed.h"
-
+#include "instance.h"
 #include "mpuMain.h"
 #include "uwbMain.h"
 #include "localization.h"
@@ -98,7 +98,7 @@ int main(void){
 	// UWB task
 
 #if TAG_DEVICE 
-	osThreadDef(uwbInitTask, UwbInitTask, osPriorityNormal, 0, 512); // 128
+	osThreadDef(uwbInitTask, UwbInitTask, osPriorityNormal, 0, 128); // 128
 	uwbInitTaskHandle = osThreadCreate(osThread(uwbInitTask), NULL);
 	
 	MsgUwb = osMessageCreate(osMessageQ(MsgUwb), NULL);  // create msg queue

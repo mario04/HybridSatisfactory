@@ -24,25 +24,18 @@ extern "C" {
 /******************************************************************************************************************
 ********************* NOTES on DW (MP) features/options ***********************************************************
 *******************************************************************************************************************/
+#define TAG_DEVICE          (0) // In order to programm the device. 1 if TAG and 0 if ANCHOR
+#define ADDR_DEVICE         (2)
+#define GATEWAY_NEWFIRM     (0)
+#define REPORT_IMP          (0)              //Report messages implementation. Tag will receive the TOF value from anchor in the slot time
+#define COOP_IMP            (0)
+
+
 #define DEEP_SLEEP (0) //To enable deep-sleep set this to 1
 //DEEP_SLEEP mode can be used, for example, by a Tag instance to put the DW1000 into low-power deep-sleep mode:
 // when the Anchor is sending the range report back to the Tag, the Tag will enter sleep after a ranging exchange is finished
 // once it receives a report or times out, before the next poll message is sent (before next ranging exchange is started).
-#define GATEWAY_NEWFIRM     (0)
 #define CORRECT_RANGE_BIAS  (1)     // Compensate for small bias due to uneven accumulator growth at close up high power
-#define REPORT_IMP      (0)              //Report messages implementation. Tag will receive the TOF value from anchor in the slot time
-#define COOP_IMP    (0)
-// Anchor
-//     WATCH_REPORT = 0; REPORT_IMP = 0 
-//     WATCH_REPORT = 0; REPORT_IMP = 1
-
-// Tag
-//     WATCH_REPORT = 0; REPORT_IMP = 0
-//     WATCH_REPORT = 0; REPORT_IMP = 1
-//     WATCH_REPORT = 1; REPORT_IMP = 1
-    
-
-#define UART_DEBUG (0)              // In order to see in which sections code the execution flow.
 
 #define ANCTOANCTWR (0) //if set to 1 then anchor to anchor TWR will be done in the last slot
 /******************************************************************************************************************
@@ -543,7 +536,7 @@ int instancegetrole(void) ;
 // get the DW1000 device ID (e.g. 0xDECA0130 for DW1000)
 uint32 instancereaddeviceid(void) ;                                 // Return Device ID reg, enables validation of physical device presence
 
-double finstancegetidist(int idx);
+double instancegetidist(int idx);
 double instancegetidistraw(int idx);
 int instancegetidist_mm(int idx);
 int instancegetidistraw_mm(int idx);

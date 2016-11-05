@@ -47,23 +47,97 @@
 
 #if TAG_DEVICE 
  				#define TA_SW1_4			FALSE
+	
+				#if (ADDR_DEVICE == 0)
+
+					#define TA_SW1_5			FALSE
+					#define TA_SW1_6			FALSE
+					#define TA_SW1_7			FALSE
+
+				#elif (ADDR_DEVICE == 1)
+
+					#define TA_SW1_5			FALSE
+					#define TA_SW1_6			FALSE
+					#define TA_SW1_7			TRUE
+
+				#elif (ADDR_DEVICE == 2)
+
+					#define TA_SW1_5			FALSE
+					#define TA_SW1_6			TRUE
+					#define TA_SW1_7			FALSE
+
+				#elif (ADDR_DEVICE == 3)
+
+					#define TA_SW1_5			FALSE
+					#define TA_SW1_6			TRUE
+					#define TA_SW1_7			TRUE
+
+				#elif (ADDR_DEVICE == 4)
+
+					#define TA_SW1_5			TRUE
+					#define TA_SW1_6			FALSE
+					#define TA_SW1_7			FALSE
+
+
+				#elif (ADDR_DEVICE == 5)
+
+					#define TA_SW1_5			TRUE
+					#define TA_SW1_6			FALSE
+					#define TA_SW1_7			TRUE
+
+
+				#elif (ADDR_DEVICE == 6)
+
+					#define TA_SW1_5			TRUE
+					#define TA_SW1_6			TRUE
+					#define TA_SW1_7			FALSE
+
+
+				#elif (ADDR_DEVICE == 7)
+
+					#define TA_SW1_5			TRUE
+					#define TA_SW1_6			TRUE
+					#define TA_SW1_7			TRUE
+
+
+
+				#endif
+
 #else
 				#define TA_SW1_4			TRUE		/* FALSE: Tag - TRUE: Anchor */
+				#if (ADDR_DEVICE == 0)
+
+					#define TA_SW1_5			FALSE
+					#define TA_SW1_6			FALSE
+					#define TA_SW1_7			FALSE
+
+				#elif (ADDR_DEVICE == 1)
+
+					#define TA_SW1_5			FALSE
+					#define TA_SW1_6			FALSE
+					#define TA_SW1_7			TRUE
+
+				#elif (ADDR_DEVICE == 2)
+
+					#define TA_SW1_5			FALSE
+					#define TA_SW1_6			TRUE
+					#define TA_SW1_7			FALSE
+
+				#elif (ADDR_DEVICE == 3)
+
+					#define TA_SW1_5			FALSE
+					#define TA_SW1_6			TRUE
+					#define TA_SW1_7			TRUE
+				#endif
 #endif
 
 #if GATEWAY_NEWFIRM
 
-#define TA_SW1_5			TRUE
-#define TA_SW1_6			FALSE
-#define TA_SW1_7			FALSE
-
-#else
-//Address
-#define TA_SW1_5			FALSE
-#define TA_SW1_6			FALSE
-#define TA_SW1_7			FALSE
-
+	#define TA_SW1_5			TRUE
+	#define TA_SW1_6			FALSE
+	#define TA_SW1_7			FALSE
 #endif
+
 
 
 #define TA_SW1_8			FALSE
@@ -76,7 +150,7 @@ int dr_mode = 0;
 int chan, tagaddr, ancaddr;
 int instance_mode = ANCHOR;
 
-#define LCD_BUFF_LEN (80)
+#define LCD_BUFF_LEN (100)
 uint8 dataseq[LCD_BUFF_LEN];
 uint8 dataseq1[LCD_BUFF_LEN];
 uint32_t pauseTWRReports  = 0;
@@ -185,10 +259,10 @@ sfConfig_t sfConfig[4] ={
 		},
 		//mode 3 - S1: 2 off, 3 on
 		{
-				(70),    // slot period ms
-				(4),     // thus 10 slots - thus 280ms superframe means 3.57 Hz location rate
-				(4*70),  // superframe period
-				(4*70),  // poll sleep delay
+				(28),    // slot period ms
+				(10),     // thus 10 slots - thus 280ms superframe means 3.57 Hz location rate
+				(28*10),  // superframe period
+				(28*10),  // poll sleep delay
 				(20000)
 		},
 		//mode 4 - S1: 2 on, 3 on
@@ -558,49 +632,32 @@ void UwbMainTask(void const * argument)
 #else
 
 		
-#if REPORT_IMP
-	#if TAG_DEVICE
-		rx = instancenewrangeReport();
+	#if REPORT_IMP
+		#if TAG_DEVICE
+			rx = instancenewrangeReport();
+		#else
+			rx = instancenewrange();
+		#endif
 	#else
-		rx = instancenewrange();
+
+			rx = instancenewrange();
 	#endif
-#else
 
-		rx = instancenewrange();
-#endif
+	#if COOP_IMP	 
+		if(rx != TOF_REPORT_NUL)
+		{	
 
+			if(instance_mode == TAG)
+			{
+				dataqueue.Range=&inst_idist[0];
+				dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation;
+				osMessagePut(MsgUwb,&dataqueue, osWaitForever);
+			}
 
-		 if(rx != TOF_REPORT_NUL)
-		 {
-
-			// if(instance_mode == TAG)
-			// {
-			// 	dataqueue.Range=&inst_idist[0];
-			// 	dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation;
-			// 	osMessagePut(MsgUwb,&dataqueue, osWaitForever);
-			// }
-
-		// }
-
-		//if there is a new ranging report received or a new range has been calculated, then prepare data
-		//to output over USB - Virtual COM port, and update the LCD
-		// if(rx != TOF_REPORT_NUL)
-		// {
-
-		// 	if(instance_mode == TAG)
-		// 	{
-		// 		dataqueue.Range=&inst_idist[0];
-		// 		dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation[0];
-
-		// 		osMessagePut(MsgUwb,&dataqueue, osWaitForever);
-				
-
-
-				
-		// 	}
-
-
-
+		 }
+	#else
+		if(rx != TOF_REPORT_NUL)
+		{
 
 			int r= 0, aaddr, taddr; //l = 0,
 			int rangeTime, valid;
@@ -611,8 +668,8 @@ void UwbMainTask(void const * argument)
 			taddr = instancenewrangetagadd() & 0xf;
 			rangeTime = instancenewrangetim() & 0xffffffff;
 
-			//if((dr_mode & 0x1) == 0) //only print for 110k
-			//if(printTWRReports + 2000 <= portGetTickCnt())
+					//if((dr_mode & 0x1) == 0) //only print for 110k
+					//if(printTWRReports + 2000 <= portGetTickCnt())
 			if(true)
 			{
 
@@ -646,6 +703,7 @@ void UwbMainTask(void const * argument)
 				}
 				else if(instance_mode == TAG)
 				{
+					//double disttoanch = inst_idist[toggle];
 					sprintf((char*)&dataseq[0], "T%d A%d: %3.2f m", tagaddr, toggle, instancegetidist(toggle));
 					uartWriteLineNoOS((char *) dataseq); //send some data
 
@@ -656,27 +714,20 @@ void UwbMainTask(void const * argument)
 						toggle = 0;
 					}
 
-					//!!!!!! Send data to the Localization Thread !!!!!!!!!!!
-//					for(or=0;or<MAX_ANCHOR_LIST_SIZE;or++)
-//					{
-//						ranging[or]=instancegetidist(or+1);
-//						sprintf((char*)&dataseq[0], "Range: %3.2f m", tagaddr, toggle, ranging[or]);
-//						uartWriteLineNoOS((char *) dataseq); //send some data
-//					}
-//					data.range=&ranging[0];
-//					osMessagePut(MsgBox,&data, osWaitForever);
-
-					// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 				}
 
-				//update the print time
+						
 				printTWRReports = portGetTickCnt();
 			}
 
-		} //if new range present
+		} //if new range present			
+
+	#endif
+
 #endif
 
  	osThreadYield(); // Give the power to other task, it has finished the ranging task
+
 
  	}
 }

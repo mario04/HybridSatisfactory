@@ -14,13 +14,12 @@
 #include "deca_port.h"
 #include "deca_device_api.h"
 #include "deca_spi.h"
-#include "uart.h"
 #include "instance.h"
 
 // -------------------------------------------------------------------------------------------------------------------
 //      Data Definitions
 // -------------------------------------------------------------------------------------------------------------------
-uint8 dataseq[100];
+//uint8 dataseq[100];
 
 // -------------------------------------------------------------------------------------------------------------------
 
@@ -292,7 +291,7 @@ int instance_init(void)
     dwt_setcallbacks(instance_txcallback, instance_rxcallback);
 
     instance_data[instance].monitor = 0;
-    instance_data[instance].anch_pos_estimation[0] = 16.75;
+    instance_data[instance].anch_pos_estimation[0] = 0;
     instance_data[instance].anch_pos_estimation[1] = 0;
     
     
@@ -560,30 +559,32 @@ void inst_processrxtimeout(instance_data_t *inst)
 		//send the final only if it has received response from anchor 0
         if((inst->previousState == TA_TXPOLL_WAIT_SEND) && ((inst->rxResponseMask & 0x1) == 0))
         {
-#if REPORT_IMP    
+        #if REPORT_IMP    
 
             inst->TimeToChangeToAnch = TRUE;
        		inst->instToSleep = FALSE ; //set sleep to TRUE so that tag will go to DEEP SLEEP before next ranging attempt
-#else      
+        #else      
             inst->instToSleep = TRUE ; 
-#endif
+        #endif
 			inst->testAppState = TA_TXE_WAIT ;
 			inst->nextState = TA_TXPOLL_WAIT_SEND ;
         }
         else if (inst->previousState == TA_TXFINAL_WAIT_SEND) //got here from main (error sending final - handle as timeout)
         {
-
-        	//dwt_forcetrxoff();	//this will clear all events
-       		//inst->instToSleep = TRUE ;
-       		// initiate the re-transmission of the poll that was not responded to
-
+        #if (REPORT_IMP==0)
+        	dwt_forcetrxoff();	//this will clear all events
+       		inst->instToSleep = TRUE ;
+            inst->testAppState = TA_TXE_WAIT ;
+            inst->testAppState = TA_TXPOLL_WAIT_SEND;
+       		//initiate the re-transmission of the poll that was not responded to
+        #else
 			inst->testAppState = TA_TXE_WAIT ;
 			inst->nextState = TA_TXLOC_WAIT_SEND ; 
             inst->newReportRange = instance_calcranges(&inst->tofArray_reported[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxReportMask);
             inst->rxReportMaskReport = inst->rxReportMask;
             inst->rxReportMask = 0;
             inst->newRangeTime = portGetTickCount() ;
-
+        #endif
 
             // Process Also when the report message is implemented
             //inst->nextState = TA_TXPOLL_WAIT_SEND ; // Process Also when the report message is implemented
@@ -638,10 +639,6 @@ void instance_txcallback(const dwt_callback_data_t *txd)
 	event_data_t dw_event;
 
 	dw_event.uTimeStamp = portGetTickCount();
-
-
-                     //if (instance_data[0].test == 1 && instance_data[0].previousState == TA_TXPOLL_WAIT_SEND)
-                    // while(1);
 
 	if(txevent == DWT_SIG_TX_DONE)
 	{
@@ -1273,7 +1270,12 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 						{
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
 							handle_error_unknownframe(dw_event);
-							instance_data[instance].stopTimer = 1;
+#if COOP_IMP
+            instance_data[instance].stopTimer = 0;
+#else
+            instance_data[instance].stopTimer = 1;
+#endif                            
+							
 							instance_data[instance].rxMsgCount++;
 							return;
 						}
@@ -1314,7 +1316,11 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 						{
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
 							handle_error_unknownframe(dw_event);
-							instance_data[instance].stopTimer = 1;
+#if COOP_IMP
+            instance_data[instance].stopTimer = 0;
+#else
+            instance_data[instance].stopTimer = 1;
+#endif							
 							instance_data[instance].rxMsgCount++;
 							return;
 						}
@@ -1471,19 +1477,32 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
                     case RTLS_DEMO_MSG_TAG_LOC:
                     {
-                        if(sourceAddress&0x7 == 0){
-                        sprintf((char*)&dataseq[0], "Tag0");
-                        uartWriteLineNoOS((char *) dataseq); //send some data
+
+                        if(instance_data[instance].mode == TAG) //tag should ignore any other Polls from tags
+                        {
+                            //instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
+                            handle_error_unknownframe(dw_event);
+#if COOP_IMP
+            instance_data[instance].stopTimer = 0;
+#else
+            instance_data[instance].stopTimer = 1;
+#endif                            
+                            instance_data[instance].rxMsgCount++;
+                            return;
                         }
-                        else {
-                             sprintf((char*)&dataseq[0], "Tag %d", sourceAddress&0x7);
-                        uartWriteLineNoOS((char *) dataseq); //send some data
-                        }
-                         if((instance_data[instance].mode == ANCHOR) && (instance_data[instance].shortAdd_idx != (A3_ANCHOR_ADDR & 0x3)))
-                         {
-                            
-                            instance_backtoanchor(&instance_data[instance]);
-                        }
+
+                        //if(sourceAddress&0x7 == 0){
+                        // sprintf((char*)&dataseq[0], "Tag0");
+                        // uartWriteLineNoOS((char *) dataseq); //send some data
+                        // }
+                        // else {
+                        //      sprintf((char*)&dataseq[0], "Tag %d", sourceAddress&0x7);
+                        // uartWriteLineNoOS((char *) dataseq); //send some data
+                        // }
+                          if((instance_data[instance].shortAdd_idx != (A3_ANCHOR_ADDR & 0x3)))                           
+                             dw_event.type_pend = DWT_SIG_TX_PENDING ;
+                         
+
 
                     }
                     break;
@@ -1496,7 +1515,11 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 						{
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
 							handle_error_unknownframe(dw_event);
-							instance_data[instance].stopTimer = 1;
+#if COOP_IMP
+            instance_data[instance].stopTimer = 0;
+#else
+            instance_data[instance].stopTimer = 1;
+#endif							
 							instance_data[instance].rxMsgCount++;
 							return;
 						}
@@ -1508,7 +1531,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
                             dwt_setrxtimeout((uint16)instance_data[instance].fwtoTimeAnc_syReport); //reconfigure the timeout for response
                             instance_data[0].delayedReplyTime = dw_event.timeStamp32h + instance_data[0].fixedReportDelayAnc;
                             instance_data[instance].reportTO = NUM_EXPECTED_RESPONSES; //set number of expected responses to 3 (from other anchors)
-                            
+                            dw_event.type_pend = DWT_SIG_DW_IDLE;
                         }
 						break;
 #endif
@@ -1518,6 +1541,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 						if(instance_data[instance].mode == TAG) //tag should ignore any other Final from anchors
 						{
 							instance_data[instance].responseTO--;
+                            instance_data[instance].reportTO--;
 						}
 						dw_event.type_pend = DWT_SIG_DW_IDLE;
 					}
@@ -1530,6 +1554,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
                 if (RTLS_DEMO_MSG_TAG_LOC == dw_event.msgu.frame[fcode_index])
                 {
                      instance_data[instance].GW.tagAddr = sourceAddress&0x7;
+                     dw_event.type_pend = DWT_SIG_RX_PENDING ;
                     // if(instance_data[instance].GW.tagAddr == 0)
                     // {
                     //     sprintf((char*)&dataseq[0], "Tag0");
@@ -1543,22 +1568,25 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
 
                     // // }
-                        if(sourceAddress&0x7 == 0){
-                        sprintf((char*)&dataseq[0], "Tag0");
-                        uartWriteLineNoOS((char *) dataseq); //send some data
-                        }
-                        else {
-                             sprintf((char*)&dataseq[0], "Tag %d", sourceAddress&0x7);
-                        uartWriteLineNoOS((char *) dataseq); //send some data
-                        }
+                      //  if(sourceAddress&0x7 == 0){
+                        // sprintf((char*)&dataseq[0], "Tag0");
+                        // uartWriteLineNoOS((char *) dataseq); //send some data
+                        // }
+                        // else {
+                        //      sprintf((char*)&dataseq[0], "Tag %d", sourceAddress&0x7);
+                        // uartWriteLineNoOS((char *) dataseq); //send some data
+                        // }
                     
                 }
                 
 
                                        
             }
-
-	    	instance_data[instance].stopTimer = 1;
+#if COOP_IMP
+	    	instance_data[instance].stopTimer = 0;
+#else
+            instance_data[instance].stopTimer = 1;
+#endif
 
             instance_putevent(dw_event, rxd_event);
 
@@ -1767,56 +1795,57 @@ int instance_run(void)
         	instance_data[instance].tagSleepCorrection2 = instance_data[instance].tagSleepCorrection;
         	instance_data[instance].tagSleepCorrection = 0; //clear the correction
             instance_data[instance].instanceTimerEn = 1; //start timer
-#if COOP_IMP
-        if(instance_data[instance].testAppState != TA_SLEEP_DONE){
+
+        #if COOP_IMP
+            if(instance_data[instance].testAppState != TA_SLEEP_DONE){
 
 
-            // Configuration to be an ANCHOR
-                instancesetrole(ANCHOR);
-                instance_data[instance].instanceAddress16 = A3_ANCHOR_ADDR;
-                 //set source address
-                 memcpy(instance_data[instance].eui64, &instance_data[instance].instanceAddress16, ADDR_BYTE_SIZE_S);
-                 dwt_seteui(instance_data[instance].eui64);
-                 instance_data[instance].shortAdd_idx = (instance_data[instance].instanceAddress16 & 0x3) ;
-                 dwt_setaddress16(instance_data[instance].instanceAddress16);
+                // Configuration to be an ANCHOR
+                    instancesetrole(ANCHOR);
+                    instance_data[instance].instanceAddress16 = A3_ANCHOR_ADDR;
+                     //set source address
+                     memcpy(instance_data[instance].eui64, &instance_data[instance].instanceAddress16, ADDR_BYTE_SIZE_S);
+                     dwt_seteui(instance_data[instance].eui64);
+                     instance_data[instance].shortAdd_idx = (instance_data[instance].instanceAddress16 & 0x3) ;
+                     dwt_setaddress16(instance_data[instance].instanceAddress16);
 
-                 if(instance_data[instance].instanceAddress16 == GATEWAY_ANCHOR_ADDR)
-                 {
-                         instance_data[instance].gatewayAnchor = TRUE;
-                 }
+                     if(instance_data[instance].instanceAddress16 == GATEWAY_ANCHOR_ADDR)
+                     {
+                             instance_data[instance].gatewayAnchor = TRUE;
+                     }
 
-                dwt_enableframefilter(DWT_FF_NOTYPE_EN); //allow data, ack frames;
+                    dwt_enableframefilter(DWT_FF_NOTYPE_EN); //allow data, ack frames;
 
-                 // First time anchor listens we don't do a delayed RX
-                 dwt_setrxaftertxdelay(0);
-                // //change to next state - wait to receive a message
-                 instance_clearevents();
+                     // First time anchor listens we don't do a delayed RX
+                     dwt_setrxaftertxdelay(0);
+                    // //change to next state - wait to receive a message
+                     instance_clearevents();
 
-                instance_data[instance].testAppState = TA_RXE_WAIT ;
+                    instance_data[instance].testAppState = TA_RXE_WAIT ;
 
-                 dwt_setrxtimeout(0);
-                 dwt_setpreambledetecttimeout(0);
-                 //instanceconfigframeheader16(&instance_data[instance]);
+                     dwt_setrxtimeout(0);
+                     dwt_setpreambledetecttimeout(0);
+                     //instanceconfigframeheader16(&instance_data[instance]);
 
-                 instance_data[instance].CoopMode = TRUE;
-                 instance_data[instance].wait4ack = 0;
+                     instance_data[instance].CoopMode = TRUE;
+                     instance_data[instance].wait4ack = 0;
 
-                // //save the important instance variables
-                 instance_data[instance].saved_rangeNumA = instance_data[instance].rangeNumA;
-                 instance_data[instance].saved_rangeNum = instance_data[instance].rangeNum;
-                 instance_data[instance].saved_tagSleepCorrection = instance_data[instance].tagSleepCorrection;
-                 instance_data[instance].saved_delayedReplyTime = instance_data[instance].delayedReplyTime;
-                 instance_data[instance].saved_rxTimeouts = instance_data[instance].rxTimeouts;
-                 instance_data[instance].saved_frameSN = instance_data[instance].frameSN;
-                 instance_data[instance].saved_longTermRangeCount = instance_data[instance].longTermRangeCount;
-                 instance_data[instance].saved_rxReportMaskReport = instance_data[instance].rxReportMaskReport;
-                 
+                    // //save the important instance variables
+                     instance_data[instance].saved_rangeNumA = instance_data[instance].rangeNumA;
+                     instance_data[instance].saved_rangeNum = instance_data[instance].rangeNum;
+                     instance_data[instance].saved_tagSleepCorrection = instance_data[instance].tagSleepCorrection;
+                     instance_data[instance].saved_delayedReplyTime = instance_data[instance].delayedReplyTime;
+                     instance_data[instance].saved_rxTimeouts = instance_data[instance].rxTimeouts;
+                     instance_data[instance].saved_frameSN = instance_data[instance].frameSN;
+                     instance_data[instance].saved_longTermRangeCount = instance_data[instance].longTermRangeCount;
+                     instance_data[instance].saved_rxReportMaskReport = instance_data[instance].rxReportMaskReport;
+                     
 
-                 instanceclearcounts();
-                
-                 
-        }
-#endif
+                     instanceclearcounts();
+                    
+                     
+            }
+        #endif
 
         }
         instance_data[instance].stopTimer = 0 ; //clear the flag - timer can run if instancetimer_en set (set above)
@@ -1831,6 +1860,7 @@ int instance_run(void)
     //check if timer has expired
     if((instance_data[instance].instanceTimerEn == 1) && (instance_data[instance].stopTimer == 0))
     {
+        
 
 		if((portGetTickCount() - instance_data[instance].instanceWakeTime) > instance_data[instance].nextSleepPeriod)
 		{
