@@ -720,6 +720,7 @@ int testapprun(instance_data_t *inst, int message)
 						{
 							//we need to wait for SIG_TX_DONE and then process the timeout and re-send the frame if needed
 							inst->gotTO = 1;
+
 						}
 						else
 						{

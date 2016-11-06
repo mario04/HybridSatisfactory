@@ -559,11 +559,13 @@ void inst_processrxtimeout(instance_data_t *inst)
 		//send the final only if it has received response from anchor 0
         if((inst->previousState == TA_TXPOLL_WAIT_SEND) && ((inst->rxResponseMask & 0x1) == 0))
         {
-        #if REPORT_IMP    
+        #if COOP_IMP    
 
             inst->TimeToChangeToAnch = TRUE;
-       		inst->instToSleep = FALSE ; //set sleep to TRUE so that tag will go to DEEP SLEEP before next ranging attempt
-        #else      
+            inst->instToSleep = FALSE ;
+       		//set sleep to TRUE so that tag will go to DEEP SLEEP before next ranging attempt
+        #else    
+               
             inst->instToSleep = TRUE ; 
         #endif
 			inst->testAppState = TA_TXE_WAIT ;
@@ -858,6 +860,7 @@ uint8 anctxorrxreenable(uint16 sourceAddress, int ancToAncTWR)
 	{
 		dwt_setrxtimeout(0); //reconfigure the timeout
 		dwt_setpreambledetecttimeout(0);
+        
 	}
 
 	if((ancToAncTWR & 1) == 1)
@@ -1009,6 +1012,7 @@ uint8 anctxorrxreenableReport(uint16 sourceAddress)
  */
 void handle_error_unknownframe(event_data_t dw_event)
 {
+
 	int instance = 0;
 	//re-enable the receiver (after error frames as we are not using auto re-enable
 	//for ranging application rx error frame is same as TO - as we are not going to get the expected frame
@@ -1043,6 +1047,7 @@ void handle_error_unknownframe(event_data_t dw_event)
 	}
 	else
 	{
+
         if (instance_data[instance].responseTO > 0){
 	       	instance_data[instance].responseTO--; //got something (need to reduce timeout (for remaining responses))
 
@@ -1334,6 +1339,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
 						if(instance_data[instance].mode == TAG) //tag should ignore any other Polls from tags
 						{
+                            
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
 							handle_error_unknownframe(dw_event);
 #if COOP_IMP
@@ -1532,6 +1538,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 						
 						if(instance_data[instance].mode == TAG) //tag should ignore any other Final from anchors
 						{
+                            
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
 							handle_error_unknownframe(dw_event);
 #if COOP_IMP
@@ -1905,6 +1912,7 @@ int instance_run(void)
 
             }
         }
+
 #if (ANCTOANCTWR == 1) //allow anchor to anchor ranging
         else if(instance_data[instance].mode == ANCHOR)
         {

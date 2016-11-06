@@ -259,10 +259,10 @@ sfConfig_t sfConfig[4] ={
 		},
 		//mode 3 - S1: 2 off, 3 on
 		{
-				(50),    // slot period ms
+				(70),    // slot period ms
 				(4),     // thus 10 slots - thus 280ms superframe means 3.57 Hz location rate
-				(50*4),  // superframe period
-				(50*4),  // poll sleep delay
+				(4*70),  // superframe period
+				(4*70),  // poll sleep delay
 				(20000)
 		},
 		//mode 4 - S1: 2 on, 3 on
