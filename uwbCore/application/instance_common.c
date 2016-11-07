@@ -1061,6 +1061,7 @@ void handle_error_unknownframe(event_data_t dw_event)
              instance_data[instance].reportTO--; //got something (need to reduce timeout (for remaining responses))
 
              dw_event.type_pend = tagrxreenableRep(0); //check if receiver will be re-enabled or it's time to send the final
+             instance_data[instance].test = 1;
          }
 
 		dw_event.type = 0;
@@ -1297,8 +1298,11 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 						{
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
 							handle_error_unknownframe(dw_event);
-
-                            instance_data[instance].stopTimer = 1;                            
+#if COOP_IMP
+            instance_data[instance].stopTimer = 0;
+#else
+            instance_data[instance].stopTimer = 1;
+#endif                            
 							
 							instance_data[instance].rxMsgCount++;
 							return;
@@ -1341,8 +1345,11 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
                             
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
 							handle_error_unknownframe(dw_event);
-                            instance_data[instance].stopTimer = 1;
-					
+#if COOP_IMP
+            instance_data[instance].stopTimer = 0;
+#else
+            instance_data[instance].stopTimer = 1;
+#endif							
 							instance_data[instance].rxMsgCount++;
 							return;
 						}
@@ -1503,13 +1510,23 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
                         {
                             //instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
                             handle_error_unknownframe(dw_event);
-
-                            instance_data[instance].stopTimer = 1;
-                            
+#if COOP_IMP
+            instance_data[instance].stopTimer = 0;
+#else
+            instance_data[instance].stopTimer = 1;
+#endif                            
                             instance_data[instance].rxMsgCount++;
                             return;
                         }
 
+                        //if(sourceAddress&0x7 == 0){
+                        // sprintf((char*)&dataseq[0], "Tag0");
+                        // uartWriteLineNoOS((char *) dataseq); //send some data
+                        // }
+                        // else {
+                        //      sprintf((char*)&dataseq[0], "Tag %d", sourceAddress&0x7);
+                        // uartWriteLineNoOS((char *) dataseq); //send some data
+                        // }
                           if((instance_data[instance].shortAdd_idx != (A3_ANCHOR_ADDR & 0x3)))                           
                              instance_backtoanchor(&instance_data[instance]);
                          
@@ -1527,7 +1544,11 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
                             
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
 							handle_error_unknownframe(dw_event);
-                            instance_data[instance].stopTimer = 1;
+#if COOP_IMP
+            instance_data[instance].stopTimer = 0;
+#else
+            instance_data[instance].stopTimer = 1;
+#endif							
 							instance_data[instance].rxMsgCount++;
 							return;
 						}
@@ -1539,7 +1560,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
                             dwt_setrxtimeout((uint16)instance_data[instance].fwtoTimeAnc_syReport); //reconfigure the timeout for response
                             instance_data[0].delayedReplyTime = dw_event.timeStamp32h + instance_data[0].fixedReportDelayAnc;
                             instance_data[instance].reportTO = NUM_EXPECTED_RESPONSES; //set number of expected responses to 3 (from other anchors)
-                            
+                            dw_event.type_pend = DWT_SIG_DW_IDLE;
                         }
 						break;
 #endif
@@ -1562,6 +1583,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
                 if (RTLS_DEMO_MSG_TAG_LOC == dw_event.msgu.frame[fcode_index])
                 {
                      instance_data[instance].GW.tagAddr = sourceAddress&0x7;
+                     dw_event.type_pend = DWT_SIG_RX_PENDING ;
                      instance_data[instance].GW.newReport = TRUE;
                     // if(instance_data[instance].GW.tagAddr == 0)
                     // {
@@ -1590,7 +1612,11 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
                                        
             }
+//#if COOP_IMP
+	    	instance_data[instance].stopTimer = 0;
+//#else
             instance_data[instance].stopTimer = 1;
+//#endif
 
             instance_putevent(dw_event, rxd_event);
 
@@ -1882,7 +1908,7 @@ int instance_run(void)
         
             else if (instance_data[instance].mode == ANCHOR)
             {
-                
+
 
                 instance_data[instance].testAppState = TA_ANCH2TAG_CONF;
                 instance_clearevents();

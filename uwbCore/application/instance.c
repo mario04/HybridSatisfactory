@@ -146,11 +146,10 @@ int testapprun(instance_data_t *inst, int message)
                     //set source address
                     inst->newRangeTagAddress = inst->instanceAddress16 ;
                     dwt_setaddress16(inst->instanceAddress16);
-
+                    inst->instToSleep = TRUE;
                     //Start off by Sleeping 1st -> set instToSleep to TRUE
                     inst->nextState = TA_TXPOLL_WAIT_SEND;
                     inst->testAppState = TA_TXE_WAIT;
-                    inst->instToSleep = TRUE;
                     inst->CoopMode = FALSE;
                     inst->TimeToChangeToTag = FALSE;
                     inst->TimeToChangeToAnch = FALSE;
@@ -529,9 +528,9 @@ int testapprun(instance_data_t *inst, int message)
             instancesetantennadelays(); //this will update the antenna delay if it has changed
             instancesettxpower(); // configure TX power if it has changed
 
-            if(inst->CoopMode == TRUE){
-                inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
-            }
+            // if(inst->CoopMode == TRUE){
+            //     inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
+            // }
 
         }
 
@@ -554,12 +553,12 @@ int testapprun(instance_data_t *inst, int message)
 
                     loc = evt.value.p;
 
-                    if ((loc->estPos[0] == 0.0) && (loc->estPos[1] == 0.0) )
+                    if ((loc->estPos[0] != 0.0) && (loc->estPos[1] != 0.0) )
                     {
-                        sprintf((char*)&dataseq[0], "TX: %3.2f m TY:%3.2f m ", loc->estPos[0], loc->estPos[1]);
+    //                     sprintf((char*)&dataseq[0], "TX: %3.2f m TY:%3.2f m ", loc->estPos[0], loc->estPos[1]);
 
-    //                  toggle = 1;
-                        uartWriteLineNoOS((char *) dataseq); //send some data
+    // //                  toggle = 1;
+    //                     uartWriteLineNoOS((char *) dataseq); //send some data
 
                         inst->anch_pos_estimation[0] = loc->estPos[0];
                         inst->anch_pos_estimation[1] = loc->estPos[1];
@@ -663,9 +662,9 @@ int testapprun(instance_data_t *inst, int message)
             inst->wait4ack = 0;
             inst->testAppState = TA_RXE_WAIT ;
 
-            if(inst->CoopMode == TRUE){
-                inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
-            }
+            // if(inst->CoopMode == TRUE){
+            //     inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
+            // }
 
 
         }
@@ -687,7 +686,7 @@ int testapprun(instance_data_t *inst, int message)
             inst->CoopMode = FALSE;
             inst->TimeToChangeToTag = FALSE;
             inst->TimeToChangeToAnch = FALSE;
-           // instanceclearcounts();
+            instanceclearcounts();
             inst->instanceWakeTime = portGetTickCount();
             inst->done = INST_NOT_DONE_YET;
 
@@ -842,9 +841,9 @@ int testapprun(instance_data_t *inst, int message)
                     //fall into the next case (turn on the RX)
                 }
 
-                if(inst->CoopMode == TRUE){
-                    inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
-                }
+                // if(inst->CoopMode == TRUE){
+                //     inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
+                // }
             }
 
             //break ; // end case TA_TX_WAIT_CONF
@@ -872,10 +871,10 @@ int testapprun(instance_data_t *inst, int message)
 
             inst->testAppState = TA_RX_WAIT_DATA;   // let this state handle it
 
-             if(inst->CoopMode == TRUE){
-                 inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
-                 inst->stopTimer = 0;
-             }    
+            //  if(inst->CoopMode == TRUE){
+            // //     inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
+            //      inst->stopTimer = 0;
+            //  }    
                  
 
             // end case TA_RXE_WAIT, don't break, but fall through into the TA_RX_WAIT_DATA state to process it immediately.
@@ -885,10 +884,10 @@ int testapprun(instance_data_t *inst, int message)
         case TA_RX_WAIT_DATA : // Wait RX data
         {
        
-            if(inst->CoopMode == TRUE){
-                inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
-                inst->stopTimer = 0; //clear the flag, as we have received a message
-            }
+            // if(inst->CoopMode == TRUE){
+            //     //inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
+            //     inst->stopTimer = 0; //clear the flag, as we have received a message
+            // }
 
             switch (message)
             {
@@ -1237,9 +1236,10 @@ int testapprun(instance_data_t *inst, int message)
         
                                 if(inst->mode == ANCHOR) //tag should ignore any other Final from anchors
                                 {
-                                    if (inst->shortAdd_idx == (A3_ANCHOR_ADDR & 0x3))
-                                    {
 
+                                    if (inst->shortAdd_idx == (A3_ANCHOR_ADDR & 0x3))
+                                    {                                
+                                
                                             uint32 tagPosx = 0;
                                             uint32 tagPosy = 0;
                                             //uint32 tagPosz = 0;
@@ -1258,8 +1258,8 @@ int testapprun(instance_data_t *inst, int message)
                                             //inst->anch_pos_estimation[2] = tagPosz/1000.0;
 
 
-                                            sprintf((char*)&dataseq[0], "RX: %3.2f m RY:%3.2f m ", inst->anch_pos_estimation[0], inst->anch_pos_estimation[1]);
-                                            uartWriteLineNoOS((char *) dataseq); //send some data
+                                            // sprintf((char*)&dataseq[0], "RX: %3.2f m RY:%3.2f m ", inst->anch_pos_estimation[0], inst->anch_pos_estimation[1]);
+                                            // uartWriteLineNoOS((char *) dataseq); //send some data
 
                                             // Code for cooperative localization
                                             instance_backtoanchor(inst);
@@ -1316,7 +1316,9 @@ int testapprun(instance_data_t *inst, int message)
                                 	if(GATEWAY_ANCHOR_ADDR == (srcAddr[0] | ((uint32)(srcAddr[1] << 8)))) //final is from A0
                                 	{
                                 		//ENABLE TIMER ONLY IF FINAL RECEIVED
+#if (COOP_IMP == 0)
 										inst->instanceTimerEn = 1;
+#endif
                                 	}
                                 }
             					//output data over USB...
@@ -1372,7 +1374,6 @@ int testapprun(instance_data_t *inst, int message)
 									//time-of-flight
 									inst->tof[inst->newRangeTagAddress & 0x7] = tof;
 									//calculate all tag - anchor ranges... and report
-                                    
 									inst->newRange = instance_calcranges(&inst->tofArray[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxResponseMask);
 									inst->rxResponseMaskReport = inst->rxResponseMask; //copy the valid mask to report
 									inst->rxResponseMask = 0;
@@ -1383,7 +1384,6 @@ int testapprun(instance_data_t *inst, int message)
 
 										inst->rxResponseMask = (0x1 << inst->shortAdd_idx);
 										inst->tofArray[inst->shortAdd_idx] = tof;
-
 									}
 									inst->newRangeTime = dw_event->uTimeStamp ;
 								}

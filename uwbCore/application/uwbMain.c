@@ -241,11 +241,11 @@ sfConfig_t sfConfig[4] ={
 
 	/*	In order to fix the slot times after report implementation change the superframe and poll sleep times below for 10*50. Try to change only the poll sleep delay*/
 		{
-				(68), //ms -
-				(10),   //thus 10 slots - thus 280ms superframe means 3.57 Hz location rate (10 slots are needed as AtoA ranging takes 30+ ms)
+				(70), //ms -
+				(4),   //thus 10 slots - thus 280ms superframe means 3.57 Hz location rate (10 slots are needed as AtoA ranging takes 30+ ms)
 				//(10*28), //superframe period
-				(68*10),
-				(68*10), //poll sleep delay
+				(4*70),
+				(4*70), //poll sleep delay
 				//(10*50), // around 46 ms is taken one slot time with the report implementation
 				(20000)
 		},
@@ -647,7 +647,7 @@ void UwbMainTask(void const * argument)
 			rx = instancenewrange();
 	#endif
 
-	#if COOP_IMP	 
+	#if COOP_IMP && TAG_DEVICE	 
 		if(rx != TOF_REPORT_NUL)
 		{	
 

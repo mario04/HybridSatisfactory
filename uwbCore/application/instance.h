@@ -24,8 +24,8 @@ extern "C" {
 /******************************************************************************************************************
 ********************* NOTES on DW (MP) features/options ***********************************************************
 *******************************************************************************************************************/
-#define TAG_DEVICE          (0) // In order to programm the device. 1 if TAG and 0 if ANCHOR
-#define ADDR_DEVICE         (0)
+#define TAG_DEVICE          (1) // In order to programm the device. 1 if TAG and 0 if ANCHOR
+#define ADDR_DEVICE         (2)
 #define GATEWAY_NEWFIRM     (0)
 #define REPORT_IMP          (1)              //Report messages implementation. Tag will receive the TOF value from anchor in the slot time
 #define COOP_IMP            (1)
