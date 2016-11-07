@@ -150,6 +150,7 @@ int testapprun(instance_data_t *inst, int message)
                     //Start off by Sleeping 1st -> set instToSleep to TRUE
                     inst->nextState = TA_TXPOLL_WAIT_SEND;
                     inst->testAppState = TA_TXE_WAIT;
+                    inst->instToSleep = TRUE;
                     inst->CoopMode = FALSE;
                     inst->TimeToChangeToTag = FALSE;
                     inst->TimeToChangeToAnch = FALSE;
@@ -686,7 +687,7 @@ int testapprun(instance_data_t *inst, int message)
             inst->CoopMode = FALSE;
             inst->TimeToChangeToTag = FALSE;
             inst->TimeToChangeToAnch = FALSE;
-            instanceclearcounts();
+           // instanceclearcounts();
             inst->instanceWakeTime = portGetTickCount();
             inst->done = INST_NOT_DONE_YET;
 
@@ -872,7 +873,7 @@ int testapprun(instance_data_t *inst, int message)
             inst->testAppState = TA_RX_WAIT_DATA;   // let this state handle it
 
              if(inst->CoopMode == TRUE){
-            //     inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
+                 inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
                  inst->stopTimer = 0;
              }    
                  
@@ -885,7 +886,7 @@ int testapprun(instance_data_t *inst, int message)
         {
        
             if(inst->CoopMode == TRUE){
-                //inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
+                inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
                 inst->stopTimer = 0; //clear the flag, as we have received a message
             }
 

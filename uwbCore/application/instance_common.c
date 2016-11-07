@@ -1539,7 +1539,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
                             dwt_setrxtimeout((uint16)instance_data[instance].fwtoTimeAnc_syReport); //reconfigure the timeout for response
                             instance_data[0].delayedReplyTime = dw_event.timeStamp32h + instance_data[0].fixedReportDelayAnc;
                             instance_data[instance].reportTO = NUM_EXPECTED_RESPONSES; //set number of expected responses to 3 (from other anchors)
-                            dw_event.type_pend = DWT_SIG_DW_IDLE;
+                            
                         }
 						break;
 #endif

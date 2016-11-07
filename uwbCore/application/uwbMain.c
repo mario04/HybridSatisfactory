@@ -42,7 +42,7 @@
 #define SWITCH_ON 			TRUE
 #define SWITCH_OFF 			FALSE
 #define BUTTON_0			FALSE
-#define TA_SW1_3			TRUE
+#define TA_SW1_3			FALSE
 
 
 #if TAG_DEVICE 
@@ -241,11 +241,11 @@ sfConfig_t sfConfig[4] ={
 
 	/*	In order to fix the slot times after report implementation change the superframe and poll sleep times below for 10*50. Try to change only the poll sleep delay*/
 		{
-				(28), //ms -
+				(68), //ms -
 				(10),   //thus 10 slots - thus 280ms superframe means 3.57 Hz location rate (10 slots are needed as AtoA ranging takes 30+ ms)
 				//(10*28), //superframe period
-				(28*10),
-				(28*10), //poll sleep delay
+				(68*10),
+				(68*10), //poll sleep delay
 				//(10*50), // around 46 ms is taken one slot time with the report implementation
 				(20000)
 		},
