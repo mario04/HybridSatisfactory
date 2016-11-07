@@ -634,8 +634,12 @@ void UwbMainTask(void const * argument)
 		
 	#if REPORT_IMP
 		#if TAG_DEVICE
+
+
 			rx = instancenewrangeReport();
+			
 		#else
+			
 			rx = instancenewrange();
 		#endif
 	#else
