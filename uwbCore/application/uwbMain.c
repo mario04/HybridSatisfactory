@@ -647,7 +647,7 @@ void UwbMainTask(void const * argument)
 			rx = instancenewrange();
 	#endif
 
-	#if COOP_IMP && TAG_DEVICE	 
+	#if COOP && TAG_DEVICE	 
 		if(rx != TOF_REPORT_NUL)
 		{	
 

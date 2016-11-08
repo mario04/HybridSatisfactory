@@ -116,8 +116,10 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys, localizat
 
 			 uwb = evt.value.p;
 
-			 info->Coordinates[MAX_ANCHOR_LIST_SIZE-1].x = uwb->anch3_pos[0];
-		  	 info->Coordinates[MAX_ANCHOR_LIST_SIZE-1].y = uwb->anch3_pos[1];
+			 // if((uwb->anch3_pos[0] != -1) && (uwb->anch3_pos[1] != -1) ){
+			 // info->Coordinates[MAX_ANCHOR_LIST_SIZE-1].x = uwb->anch3_pos[0];
+		  // 	 info->Coordinates[MAX_ANCHOR_LIST_SIZE-1].y = uwb->anch3_pos[1];
+		  // 	}
 		     //info->Coordinates[MAX_ANCHOR_LIST_SIZE-1].z = uwb->anch3_pos[2];
 
 
@@ -132,8 +134,9 @@ void initSystem(PVA_EKF *PVASys,LocData *info, vecPVA_EKF * vecPVASys, localizat
 				  }
 			 }
 
-			 if(info->Nummeasurements >= NUM_COORD && info->Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
+			 if(info->Nummeasurements > NUM_COORD && info->Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
 			 {
+			 	info->Nummeasurements--;
 				  LLScoord= LLS(info); // Save the position estimated
 				  if(LLScoord.z > 0)
 					  LLScoord.z = 1.7; // Medium heigh of a person
@@ -207,11 +210,11 @@ void Locthread(void const *argument)
 	  {
 
 		  uwb = evt.value.p;
-
-		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].x = uwb->anch3_pos[0];
-		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].y = uwb->anch3_pos[1];
-		  //info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].z = uwb->anch3_pos[2];
-
+// 			 if((uwb->anch3_pos[0] != -1) && (uwb->anch3_pos[1] != -1) ){
+// 		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].x = uwb->anch3_pos[0];
+// 		  info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].y = uwb->anch3_pos[1];
+// 		  //info.Coordinates[MAX_ANCHOR_LIST_SIZE-1].z = uwb->anch3_pos[2];
+// }
 		  for(i=0;i<MAX_ANCHOR_LIST_SIZE;i++)
 		  {
 			  if (uwb->Range[i] != 0)
@@ -223,9 +226,9 @@ void Locthread(void const *argument)
 		  }
 		 
 
-		  if(info.Nummeasurements >= NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
+		  if(info.Nummeasurements > NUM_COORD && info.Nummeasurements<=MAX_ANCHOR_LIST_SIZE) // Estimates Position
 		  {
-
+		  	info.Nummeasurements--;
 			  //EKF_PVA(&PVASys,&info,&ins_meas,&DCMbn);
 			  EKF_PVA2(&PVASys,&info);
 			//  printMatrix(&PVASys.X);
