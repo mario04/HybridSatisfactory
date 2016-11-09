@@ -28,7 +28,9 @@
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // NOTE: the maximum RX timeout is ~ 65ms
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+#define LCD_BUFF_LEN (80)
+uint8 dataseq[LCD_BUFF_LEN];
+uint8 dataseq1[LCD_BUFF_LEN];
 
 // -------------------------------------------------------------------------------------------------------------------
 // Functions
@@ -201,6 +203,7 @@ int testapprun(instance_data_t *inst, int message)
 					dwt_setrxaftertxdelay(0); //no delay of turning on of RX
                     dwt_setrxtimeout(0);
                     dwt_setpreambledetecttimeout(0);
+                    dwt_setdblrxbuffmode(1);
                     //change to next state - wait to receive a message
                     inst->testAppState = TA_RXE_WAIT ;
                 }
@@ -617,6 +620,40 @@ int testapprun(instance_data_t *inst, int message)
 						//do something with message data (e.g. could extract any ToFs and print them)
 						inst->testAppState = TA_RXE_WAIT ;              // wait for next frame
 						dwt_setrxaftertxdelay(0);
+
+                        uint32 tagPosx = 0;
+                        uint32 tagPosy = 0;
+                        int ltrange = 0;
+                        int rangeTime = 0;
+                        if(inst->GW.newReport2 ){
+                            inst->GW.function_code = RTLS_DEMO_MSG_TAG_LOC;
+                            inst->GW.rangeNum = messageData[LOC_RNUM];
+                            memcpy(&tagPosx, &(messageData[XLOC_POS]), 4);
+                            memcpy(&tagPosy, &(messageData[YLOC_POS]), 4);
+                            inst->GW.tagxpos = tagPosx/1000.0;
+                            inst->GW.tagypos = tagPosy/1000.0;
+                            inst->GW.vresploc = messageData[VRESPLOC];
+                            memcpy(&ltrange, &(messageData[LTRANGE]), 4);
+                            memcpy(&rangeTime, &(messageData[RANGETIME]), 4);
+                            inst->GW.ltrange = ltrange;
+                            inst->GW.rangeTime = rangeTime;
+                            inst->GW.newReport = FALSE;
+                            inst->GW.newReport2 = FALSE;
+                            inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
+
+                            // sprintf((char*)&dataseq[0], "mc %x %3.3f %3.3f %04x %02x %08x %c%d\r\n",
+                            //                 instance_data[0].GW.vresploc, instance_data[0].GW.tagxpos ,instance_data[0].GW.tagypos,
+                            //                     instance_data[0].GW.ltrange, instance_data[0].GW.rangeNum,instance_data[0].GW.rangeTime,
+                            //                     't', instance_data[0].GW.tagAddr);
+                            sprintf((char*)&dataseq[0], " hi GW: %d\r\n", instance_data[0].GW.tagAddr);
+                             uartWriteLineNoOS((char *) dataseq); //send some data
+                            instanceclearLOC_MSG();
+                            
+
+
+
+                        } 
+                                   
 					}
 					else
                     {

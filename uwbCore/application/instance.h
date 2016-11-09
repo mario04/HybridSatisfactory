@@ -51,13 +51,13 @@ extern "C" {
 #define RTLS_DEMO_MSG_ANCH_RESP2            (0x72)          // Anchor response to poll from anchor
 #define RTLS_DEMO_MSG_ANCH_FINAL            (0x73)          // Anchor final massage back to Anchor
 #define RTLS_DEMO_MSG_TAG_FINAL             (0x82)          // Tag final massage back to Anchor
-
+#define RTLS_DEMO_MSG_TAG_LOC               (0X3B)
 
 //lengths including the Decaranging Message Function Code byte
 #define TAG_POLL_MSG_LEN                    2				// FunctionCode(1), Range Num (1)
 #define ANCH_RESPONSE_MSG_LEN               8               // FunctionCode(1), Sleep Correction Time (2), Measured_TOF_Time(4), Range Num (1) (previous)
 #define TAG_FINAL_MSG_LEN                   33              // FunctionCode(1), Range Num (1), Poll_TxTime(5),
-															// Resp0_RxTime(5), Resp1_RxTime(5), Resp2_RxTime(5), Resp3_RxTime(5), Final_TxTime(5), Valid Response Mask (1)
+#define TAG_LOC_MSG_LEN                     20															// Resp0_RxTime(5), Resp1_RxTime(5), Resp2_RxTime(5), Resp3_RxTime(5), Final_TxTime(5), Valid Response Mask (1)
 
 #define MAX_MAC_MSG_DATA_LEN                (TAG_FINAL_MSG_LEN) //max message len of the above
 
@@ -121,7 +121,13 @@ extern "C" {
 #define TOFR                                3				// ToF (n-1) 4 bytes
 #define TOFRN								7				// range number 1 byte
 #define POLL_RNUM                           1               // Poll message range number
-
+#define LOC_RNUM                            1
+#define XLOC_POS                            2
+#define YLOC_POS                            6
+#define VRESPLOC                            10
+#define VLOC                                11
+#define LTRANGE                             12
+#define RANGETIME                           16
 //this it the delay used for configuring the receiver on delay (wait for response delay)
 //NOTE: this RX_RESPONSE_TURNAROUND is dependent on the microprocessor and code optimisations
 #define RX_RESPONSEX_TURNAROUND (50) //takes about 100 us for response to come back
@@ -238,6 +244,20 @@ typedef struct
     uint16 replyDly ; //response delay time (Tag or Anchor when sending Final/Response messages respectively)
 } sfConfig_t ;
 
+typedef struct
+{
+    uint8 function_code;
+    uint8 rangeNum;
+    float tagxpos;
+    float tagypos;
+    uint8 vresploc;
+    int ltrange;
+    int rangeTime;
+    uint8 newReport;
+    uint8 newReport2;
+    uint8 tagAddr;
+
+}LOC_MSG;
 /******************************************************************************************************************
 *******************************************************************************************************************
 *******************************************************************************************************************/
@@ -409,6 +429,7 @@ typedef struct
 	int8 rxResps[256];
 
 	int dwIDLE; //set to 1 when the RST goes high after wake up (it is set in process_dwRSTn_irq)
+    LOC_MSG GW;
 
 } instance_data_t ;
 

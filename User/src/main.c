@@ -61,7 +61,7 @@ void PermanentBlinkTask(void const * argument);
 
 //-----------------Queues-------------------
 osMessageQId  MsgIns,MsgUwb;
-osMessageQDef(MsgIns, 1, Ins_data);// Define message queue (Inertial sensor data)
+//osMessageQDef(MsgIns, 1, Ins_data);// Define message queue (Inertial sensor data)
 osMessageQDef(MsgUwb, 1, Ranging_data);// Define message queue (UWB data)
 //-------------------------------------------
 
@@ -96,11 +96,11 @@ int main(void){
 	osThreadDef(uwbInitTask, UwbInitTask, osPriorityNormal, 0, 128);
 	uwbInitTaskHandle = osThreadCreate(osThread(uwbInitTask), NULL);
 	// Queues
-	MsgIns = osMessageCreate(osMessageQ(MsgIns), NULL);  // create msg queue
+	//MsgIns = osMessageCreate(osMessageQ(MsgIns), NULL);  // create msg queue
 	MsgUwb = osMessageCreate(osMessageQ(MsgUwb), NULL);  // create msg queue
 
-	osThreadDef(Loc_thread, Locthread, osPriorityBelowNormal, 0, 512);
-	ThreadLocid = osThreadCreate(osThread(Loc_thread), NULL);
+	// osThreadDef(Loc_thread, Locthread, osPriorityBelowNormal, 0, 512);
+	// ThreadLocid = osThreadCreate(osThread(Loc_thread), NULL);
 
 	/* Start scheduler */
 	osKernelStart();

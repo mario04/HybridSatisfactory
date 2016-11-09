@@ -418,7 +418,19 @@ void instance_config(instanceConfig_t *config, sfConfig_t *sfConfig)
 // -------------------------------------------------------------------------------------------------------------------
 // function to set the tag sleep time (in ms)
 //
-
+void instanceclearLOC_MSG(void)
+{
+    instance_data[0].GW.function_code =  0;
+    instance_data[0].GW.rangeNum =  0;
+    instance_data[0].GW.newReport =  FALSE;
+    instance_data[0].GW.newReport2 =  FALSE;
+    instance_data[0].GW.ltrange =  0;
+    instance_data[0].GW.rangeTime =  0;
+    instance_data[0].GW.vresploc =  0;
+    instance_data[0].GW.tagxpos =  0;
+    instance_data[0].GW.tagypos =  0;
+    instance_data[0].GW.tagAddr = 0;
+}
 void instancesettagsleepdelay(int sleepdelay) //sleep in ms
 {
     int instance = 0 ;
@@ -1000,7 +1012,7 @@ void ancprepareresponse(uint16 sourceAddress, uint8 srcAddr_index, uint8 fcode_i
 void instance_rxcallback(const dwt_callback_data_t *rxd)
 {
 
-
+dwt_rxenable(DWT_START_RX_IMMEDIATE);
 	int instance = 0;
 	uint8 rxTimeStamp[5]  = {0, 0, 0, 0, 0};
 
@@ -1247,6 +1259,38 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
 				}
 			}//end of if not Listener mode
+            else{
+                if (RTLS_DEMO_MSG_TAG_LOC == dw_event.msgu.frame[fcode_index])
+                {
+
+                    instance_data[instance].GW.tagAddr = sourceAddress&0x7;
+                     
+                    
+                     if(instance_data[instance].GW.tagAddr == 0)
+                      {
+                    // //     sprintf((char*)&dataseq[0], "Tag0");
+                    // //     uartWriteLineNoOS((char *) dataseq); //send some data
+                        instance_data[instance].GW.newReport = TRUE;
+
+                     }
+                      else 
+                      {
+                    // //     sprintf((char*)&dataseq[0], "Tagn");
+                    // //     uartWriteLineNoOS((char *) dataseq); //send some data
+
+                        instance_data[instance].GW.newReport2 = TRUE;
+                       }
+                    //   //  if(sourceAddress&0x7 == 0){
+                    //     // sprintf((char*)&dataseq[0], "Tag0");
+                    //     // uartWriteLineNoOS((char *) dataseq); //send some data
+                    //     // }
+                    //     // else {
+                    //     //      sprintf((char*)&dataseq[0], "Tag %d", sourceAddress&0x7);
+                    //     // uartWriteLineNoOS((char *) dataseq); //send some data
+                    //     // }
+                    
+                   }
+            }
 	    	instance_data[instance].stopTimer = 1;
 
             instance_putevent(dw_event, rxd_event);
