@@ -360,8 +360,10 @@ int testapprun(instance_data_t *inst, int message)
                 inst->instToSleep = FALSE ;
                 inst->testAppState = inst->nextState;
                 inst->CoopMode = FALSE;
-                //inst->instanceWakeTime = portGetTickCount();
+
 #if COOP_IMP
+                inst->instanceWakeTime = portGetTickCount();
+                inst->tagSleepCorrection = 0;
                 inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT_TO;
 #elif COOP
                 
@@ -605,6 +607,7 @@ int testapprun(instance_data_t *inst, int message)
 
             while(run){
                 evt = osMessageGet(MsgLoc,1);
+
 
                 if (evt.status == osEventMessage)
                 {
@@ -1056,7 +1059,7 @@ int testapprun(instance_data_t *inst, int message)
                                 		//configure the time A1 will poll A2 (it should be in half slot time from now)
 										inst->a1SlotTime = dw_event->uTimeStamp + (inst->slotPeriod);
 
-										//inst->instanceTimerEn = 1; - THIS IS ENABLED BELOW AFTER FINAL
+										inst->instanceTimerEn = 1; //- THIS IS ENABLED BELOW AFTER FINAL
 										// - means that if final is not received then A1 will not range to A2
                                 	}
                                 }
@@ -1209,7 +1212,7 @@ int testapprun(instance_data_t *inst, int message)
 #if REPORT_IMP
                             case RTLS_DEMO_MSG_ANCH_REPORT:
                             {
-       
+
                             	uint8 currentRangeNum = (messageData[REPORT_RNUM]);
                                 if(dw_event->type_pend == DWT_SIG_TX_PENDING)
                                 {
@@ -1295,7 +1298,7 @@ int testapprun(instance_data_t *inst, int message)
                                 {
                                     if (inst->shortAdd_idx == (A3_ANCHOR_ADDR & 0x3))
                                     {                                
-                                
+ 
                                             uint32 tagPosx = 0;
                                             uint32 tagPosy = 0;
                                             uint8 flag_neg;
@@ -1340,7 +1343,7 @@ int testapprun(instance_data_t *inst, int message)
                                             }
 
 
-
+                                            inst->test++;
                                             // Code for cooperative localization
                                             
                                             inst->done = INST_DONE_WAIT_FOR_NEXT_EVENT;
@@ -1366,7 +1369,7 @@ int testapprun(instance_data_t *inst, int message)
                             case RTLS_DEMO_MSG_ANCH_FINAL:
                             case RTLS_DEMO_MSG_TAG_FINAL:
                             {
-                        
+
                                 int64 Rb, Da, Ra, Db ;
                                 uint64 tagFinalTxTime  = 0;
                                 uint64 tagFinalRxTime  = 0;

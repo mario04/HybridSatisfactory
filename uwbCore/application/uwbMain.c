@@ -615,22 +615,6 @@ void UwbMainTask(void const * argument)
 			}
 			instance_data[0].monitor = 0;
 		}
-
-#if GATEWAY_NEWFIRM
-
-  //       if((instance_data[0].GW.function_code == RTLS_DEMO_MSG_TAG_LOC) && (instance_data[0].GW.newReport == TRUE)){
-        	
-  //   	sprintf((char*)&dataseq[0], "mc %x %3.3f %3.3f %04x %02x %08x %c%d\r\n",
-		// 									instance_data[0].GW.vresploc, instance_data[0].GW.tagxpos ,instance_data[0].GW.tagypos,
-		// 										instance_data[0].GW.ltrange, instance_data[0].GW.rangeNum,instance_data[0].GW.rangeTime,
-		// 										't', instance_data[0].GW.tagAddr);
-		// uartWriteLineNoOS((char *) dataseq); //send some data
-  //       instanceclearLOC_MSG();
-        
-//}
-
-#else
-
 		
 	#if REPORT_IMP
 		#if TAG_DEVICE
@@ -742,7 +726,7 @@ void UwbMainTask(void const * argument)
 
 	#endif
 
-#endif
+
 
  	osThreadYield(); // Give the power to other task, it has finished the ranging task
 

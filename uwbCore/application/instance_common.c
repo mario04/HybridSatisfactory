@@ -1841,7 +1841,7 @@ int instance_run(void)
                      instance_data[instance].saved_frameSN = instance_data[instance].frameSN;
                      instance_data[instance].saved_longTermRangeCount = instance_data[instance].longTermRangeCount;
                      instance_data[instance].saved_rxReportMaskReport = instance_data[instance].rxReportMaskReport;
-                     
+
 
                      instanceclearcounts();
                     
