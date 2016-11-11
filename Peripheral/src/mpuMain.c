@@ -972,7 +972,7 @@ void MpuNewDataTask(void const * argument) {
 			}
 			#endif
 
-			osMessagePut(MsgIns,&dataqueue, osWaitForever);
+			//osMessagePut(MsgIns,&dataqueue, osWaitForever);
 		}
 		osThreadYield();
 	}

@@ -24,14 +24,14 @@ extern "C" {
 /******************************************************************************************************************
 ********************* NOTES on DW (MP) features/options ***********************************************************
 *******************************************************************************************************************/
-#define TAG_DEVICE          (0) // In order to programm the device. 1 if TAG and 0 if ANCHOR
+#define TAG_DEVICE          (1) // In order to programm the device. 1 if TAG and 0 if ANCHOR
 #define ADDR_DEVICE         (0)
 #define GATEWAY_NEWFIRM     (0)
 #define REPORT_IMP          (1)              //Report messages implementation. Tag will receive the TOF value from anchor in the slot time
-#define COOP                (1)
+#define COOP                (0)
 
 
-#define COOP_IMP            (0)
+#define COOP_IMP            (1)
 #define INST_DEBUG          (0)
 
 
@@ -47,8 +47,8 @@ extern "C" {
 *******************************************************************************************************************/
 
 #define NUM_INST            1
-#define NUM_COORD (3) // define the number of coordinates system -> defines if the localization is 2D or 3D
-#define NUM_COORD2 (3)
+#define NUM_COORD (2) // define the number of coordinates system -> defines if the localization is 2D or 3D
+#define NUM_COORD2 (2)
 #define SPEED_OF_LIGHT      (299702547.0)     // in m/s in air
 #define MASK_40BIT			(0x00FFFFFFFFFF)  // DW1000 counter is 40 bits
 #define MASK_TXDTS			(0x00FFFFFFFE00)  //The TX timestamp will snap to 8 ns resolution - mask lower 9 bits.
@@ -70,7 +70,7 @@ extern "C" {
 #define TAG_POLL_MSG_LEN                    2				// FunctionCode(1), Range Num (1)
 #define ANCH_RESPONSE_MSG_LEN               8               // FunctionCode(1), Sleep Correction Time (2), Measured_TOF_Time(4), Range Num (1) (previous)
 #define ANCH_REPORT_MSG_LEN                 6               // FunctionCode(1), Range Num (1), Measured_TOF_Time(4)
-#define TAG_LOC_MSG_LEN                     20              // FunctionCode(1), Range Num(1), xPosition (4), yPosition(4), Valid Response Mask (1), ValidLoc (1), LongTermRange (4), RangeTime (4)
+#define TAG_LOC_MSG_LEN                     13              // FunctionCode(1), Range Num(1), xPosition (4), yPosition(4), Valid Response Mask (1), ValidLoc (1), Flag_Neg (1)
 #define TAG_FINAL_MSG_LEN                   33              // FunctionCode(1), Range Num (1), Poll_TxTime(5),
 															// Resp0_RxTime(5), Resp1_RxTime(5), Resp2_RxTime(5), Resp3_RxTime(5), Final_TxTime(5), Valid Response Mask (1)
 
@@ -143,8 +143,8 @@ extern "C" {
 #define YLOC_POS                            6
 #define VRESPLOC                            10
 #define VLOC                                11
-#define LTRANGE                             12
-#define RANGETIME                           16
+#define FLAG_NEG                            12
+
 
 
 //this it the delay used for configuring the receiver on delay (wait for response delay)
@@ -467,6 +467,7 @@ typedef struct
 	int8 rxRep[256];
 	int8 rxReportMask;
     int8 rxReportMaskReport;
+    int8 rxMaskShared;
 	int8 reportTO;
     int8 test;
     float anch_pos_estimation[NUM_COORD]; // This must be double?? see the locatlization theread in order to see what kind the varible is it.
@@ -484,7 +485,9 @@ typedef struct
     int saved_longTermRangeCount;
     uint8 validLoc;
     LOC_MSG GW;
-
+    uint8 is_ancho3_pos;
+    uint16 firstAddrTag;
+    uint8 anyPoll;
 
 } instance_data_t ;
 

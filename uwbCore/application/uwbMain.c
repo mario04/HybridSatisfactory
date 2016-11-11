@@ -655,10 +655,24 @@ void UwbMainTask(void const * argument)
 			{
 				dataqueue.Range=&inst_idist[0];
 				dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation;
+				dataqueue.anch3_posTrue = instance_data[0].is_ancho3_pos;
 				osMessagePut(MsgUwb,&dataqueue, osWaitForever);
 			}
 
 		 }
+	#elif COOP_IMP && TAG_DEVICE
+		 	if(rx != TOF_REPORT_NUL)
+			{	
+
+				if(instance_mode == TAG)
+				{
+					dataqueue.Range=&inst_idist[0];
+					dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation;
+					dataqueue.anch3_posTrue = instance_data[0].is_ancho3_pos;
+					osMessagePut(MsgUwb,&dataqueue, osWaitForever);
+				}
+
+		 	}
 	#else
 		if(rx != TOF_REPORT_NUL)
 		{

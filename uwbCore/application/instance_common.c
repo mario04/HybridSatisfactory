@@ -565,7 +565,7 @@ void inst_processrxtimeout(instance_data_t *inst)
             inst->instToSleep = FALSE ;
        		//set sleep to TRUE so that tag will go to DEEP SLEEP before next ranging attempt
         #elif COOP
-            inst->instToSleep = TRUE ;
+            inst->instToSleep = FALSE ;
         #else    
                
             inst->instToSleep = TRUE ; 
@@ -588,10 +588,11 @@ void inst_processrxtimeout(instance_data_t *inst)
                 
                 inst->testAppState = TA_TXE_WAIT ;
                 inst->nextState = TA_TXLOC_WAIT_SEND ;
+                inst->instToSleep = FALSE;
                 // inst->newReportRange = instance_calcranges(&inst->tofArray_reported[0], MAX_ANCHOR_LIST_SIZE, TOF_REPORT_T2A, &inst->rxReportMask);
                 // inst->rxReportMaskReport = inst->rxReportMask;
                 // inst->rxReportMask = 0;
-                inst->newRangeTime = portGetTickCount() ;
+                //inst->newRangeTime = portGetTickCount() ;
             #elif COOP 
                 dwt_forcetrxoff();
                 inst->testAppState = TA_TXE_WAIT ; //go to TA_TXE_WAIT first to check if it's sleep time
@@ -1068,7 +1069,7 @@ void handle_error_unknownframe(event_data_t dw_event)
              instance_data[instance].reportTO--; //got something (need to reduce timeout (for remaining responses))
 
              dw_event.type_pend = tagrxreenableRep(0); //check if receiver will be re-enabled or it's time to send the final
-             instance_data[instance].test = 1;
+             
          }
 
 		dw_event.type = 0;
@@ -1305,12 +1306,9 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 						{
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
 							handle_error_unknownframe(dw_event);
-#if COOP_IMP
-            instance_data[instance].stopTimer = 0;
-#else
-            instance_data[instance].stopTimer = 1;
-#endif                            
-							
+
+			                instance_data[instance].stopTimer = 1;
+			
 							instance_data[instance].rxMsgCount++;
 							return;
 						}
@@ -1352,11 +1350,9 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
                             
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
 							handle_error_unknownframe(dw_event);
-#if COOP_IMP
-            instance_data[instance].stopTimer = 0;
-#else
-            instance_data[instance].stopTimer = 1;
-#endif							
+
+                            instance_data[instance].stopTimer = 1;
+
 							instance_data[instance].rxMsgCount++;
 							return;
 						}
@@ -1517,11 +1513,9 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
                          {
                            //instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
                             handle_error_unknownframe(dw_event);
-#if COOP_IMP
-            instance_data[instance].stopTimer = 0;
-#else
-            instance_data[instance].stopTimer = 1;
-#endif                            
+
+                            instance_data[instance].stopTimer = 1;
+
                             instance_data[instance].rxMsgCount++;
                             return;
                         }
@@ -1543,11 +1537,9 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
                             
 							//instance_data[instance].responseTO++; //as will be decremented in the function and was also decremented above
 							handle_error_unknownframe(dw_event);
-#if COOP_IMP
-            instance_data[instance].stopTimer = 0;
-#else
-            instance_data[instance].stopTimer = 1;
-#endif							
+                           
+                            instance_data[instance].stopTimer = 1;
+
 							instance_data[instance].rxMsgCount++;
 							return;
 						}
@@ -1585,28 +1577,7 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
                      instance_data[instance].GW.tagAddr = sourceAddress&0x7;
                      
                      instance_data[instance].GW.newReport = TRUE;
-                    // if(instance_data[instance].GW.tagAddr == 0)
-                    //  {
-                    // //     sprintf((char*)&dataseq[0], "Tag0");
-                    // //     uartWriteLineNoOS((char *) dataseq); //send some data
 
-
-                    //   }
-                    //  else if(instance_data[instance].GW.tagAddr == 2)
-                    //  {
-                    // //     sprintf((char*)&dataseq[0], "Tagn");
-                    // //     uartWriteLineNoOS((char *) dataseq); //send some data
-
-                        
-                    //   }
-                    //   //  if(sourceAddress&0x7 == 0){
-                    //     // sprintf((char*)&dataseq[0], "Tag0");
-                    //     // uartWriteLineNoOS((char *) dataseq); //send some data
-                    //     // }
-                    //     // else {
-                    //     //      sprintf((char*)&dataseq[0], "Tag %d", sourceAddress&0x7);
-                    //     // uartWriteLineNoOS((char *) dataseq); //send some data
-                    //     // }
                     
                 }
                 
@@ -1614,11 +1585,9 @@ void instance_rxcallback(const dwt_callback_data_t *rxd)
 
                                        
             }
-#if COOP_IMP
-	    	instance_data[instance].stopTimer = 0;
-#else
+
             instance_data[instance].stopTimer = 1;
-#endif
+
 
             instance_putevent(dw_event, rxd_event);
 
@@ -1834,6 +1803,7 @@ int instance_run(void)
 
                 // Configuration to be an ANCHOR
                     instancesetrole(ANCHOR);
+                    instance_data[instance].anyPoll = FALSE;
                     instance_data[instance].instanceAddress16 = A3_ANCHOR_ADDR;
                      //set source address
                      memcpy(instance_data[instance].eui64, &instance_data[instance].instanceAddress16, ADDR_BYTE_SIZE_S);
@@ -1880,6 +1850,16 @@ int instance_run(void)
         #endif
 
         }
+        #if COOP
+        else{
+            int32 nextPeriod2 ;
+            nextPeriod2 = instance_data[instance].tagSleepTime_ms;
+            instance_data[instance].nextSleepPeriod = (uint32) nextPeriod2 ; //set timeout time, CAST the positive period to UINT for correct wrapping.
+            instance_data[instance].tagSleepCorrection2 = instance_data[instance].tagSleepCorrection;
+            instance_data[instance].tagSleepCorrection = 0; //clear the correction
+            instance_data[instance].instanceTimerEn = 1; //start timer
+        }
+        #endif
         instance_data[instance].stopTimer = 0 ; //clear the flag - timer can run if instancetimer_en set (set above)
         instance_data[instance].done = INST_NOT_DONE_YET;
     }
@@ -1913,7 +1893,7 @@ int instance_run(void)
 
                 instance_clearevents();
                 instance_data[instance].instanceTimerEn = 0;
-                instance_data[instance].CoopMode = FALSE;
+                
 
                 dwt_forcetrxoff();
                 instancesetrole(TAG);
@@ -1930,6 +1910,7 @@ int instance_run(void)
                 instance_data[instance].TimeToChangeToAnch = FALSE;
                 instanceclearcounts();
                 instance_data[instance].instanceWakeTime = portGetTickCount();
+                instance_data[instance].instToSleep = FALSE;
                 instance_data[instance].done = INST_NOT_DONE_YET;
 
                 memcpy(&(instance_data[instance].rangeNumA),&(instance_data[instance].saved_rangeNumA), 8);
@@ -1942,6 +1923,11 @@ int instance_run(void)
                 instance_data[instance].longTermRangeCount = instance_data[instance].saved_longTermRangeCount;
 
             }
+#elif COOP
+            else if (instance_data[instance].mode == ANCHOR)
+            {
+                instance_data[instance].testAppState = TA_ANCH2TAG_CONF ;
+            }  
 #endif
         }
 
