@@ -654,6 +654,7 @@ void UwbMainTask(void const * argument)
 					dataqueue.anch3_pos = &instance_data[0].anch_pos_estimation;
 					dataqueue.anch3_posTrue = instance_data[0].is_ancho3_pos;
 					osMessagePut(MsgUwb,&dataqueue, osWaitForever);
+
 				}
 
 		 	}

@@ -36,21 +36,23 @@ extern osMessageQId  MsgLoc;
 #define COOPERATIVE (1) // Enable or disable the Cooperative approach
 
 #define PV_MODEL (1) // Enable or disable the PV model. If 0 then P_MODEL
-
+#define GRAVITY (9.80665)
 #if PV_MODEL
 	#define STATEVEC	(2) // x, y, vx, vy
-	#define QNUM		(0.1)
+	//#define QNUM		(0.008*GRAVITY)
+	#define QNUM		(0.8)
 #else
 	#define	STATEVEC	(1) // x, y
-	#define QNUM 		(0.05)
+	#define QNUM 		(0.8)
 #endif
 
 // Constants
 #define STD_DIST (0.2) // [m] - Standard deviation of the UWB ranging 
-#define TIME_LOC (0.1) // time to take UWB measurements -> in seconds
+#define TIME_LOC (0.3) // time to take UWB measurements -> in seconds
 
-#define GRAVITY (9.80665)  // m/s^2
-#define ERROR_ACC (0.008*GRAVITY)
+  // m/s^2
+#define ERROR_ACC (QNUM)
+//#define ERROR_ACC (0.8)
 //#define ERROR_GYRO (0.1*DEG2RAD)
 #define LIMIT_INIT_TRIES (10)
 #define EKF_TRIES 		(1)

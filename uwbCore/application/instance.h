@@ -25,13 +25,13 @@ extern "C" {
 ********************* NOTES on DW (MP) features/options ***********************************************************
 *******************************************************************************************************************/
 #define TAG_DEVICE          (1) // In order to programm the device. 1 if TAG and 0 if ANCHOR
-#define ADDR_DEVICE         (1)
+#define ADDR_DEVICE         (2)
 #define GATEWAY_NEWFIRM     (0)
 #define REPORT_IMP          (1)              //Report messages implementation. Tag will receive the TOF value from anchor in the slot time
-#define COOP                (1)
+#define COOP                (0)
 
 
-#define COOP_IMP            (0)
+#define COOP_IMP            (1)
 #define INST_DEBUG          (0)
 
 
@@ -70,7 +70,7 @@ extern "C" {
 #define TAG_POLL_MSG_LEN                    2				// FunctionCode(1), Range Num (1)
 #define ANCH_RESPONSE_MSG_LEN               8               // FunctionCode(1), Sleep Correction Time (2), Measured_TOF_Time(4), Range Num (1) (previous)
 #define ANCH_REPORT_MSG_LEN                 6               // FunctionCode(1), Range Num (1), Measured_TOF_Time(4)
-#define TAG_LOC_MSG_LEN                     13              // FunctionCode(1), Range Num(1), xPosition (4), yPosition(4), Valid Response Mask (1), ValidLoc (1), Flag_Neg (1)
+#define TAG_LOC_MSG_LEN                     14              // FunctionCode(1), Range Num(1), xPosition (4), yPosition(4), Valid Response Mask (1), ValidLoc (1), Flag_Neg (1), TagInx (1)
 #define TAG_FINAL_MSG_LEN                   33              // FunctionCode(1), Range Num (1), Poll_TxTime(5),
 															// Resp0_RxTime(5), Resp1_RxTime(5), Resp2_RxTime(5), Resp3_RxTime(5), Final_TxTime(5), Valid Response Mask (1)
 
@@ -144,6 +144,7 @@ extern "C" {
 #define VRESPLOC                            10
 #define VLOC                                11
 #define FLAG_NEG                            12
+#define TAGNUM                              13    
 
 
 

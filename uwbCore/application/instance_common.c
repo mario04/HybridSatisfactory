@@ -1897,7 +1897,7 @@ int instance_run(void)
 
                 dwt_forcetrxoff();
                 instancesetrole(TAG);
-                instance_data[instance].instanceAddress16 = instance_data[instance].newRangeTagAddress;
+                instance_data[instance].instanceAddress16 = instance_data[instance].firstAddrTag;
                 memcpy(instance_data[instance].eui64, &instance_data[instance].instanceAddress16, ADDR_BYTE_SIZE_S);
                 dwt_seteui(instance_data[instance].eui64);
                 dwt_setaddress16(instance_data[instance].instanceAddress16);

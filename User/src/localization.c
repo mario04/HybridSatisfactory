@@ -15,17 +15,19 @@
 #include <uwbMain.h>
 #include "../../User/inc/compiler.h"
 
-double range_bias[MAX_ANCHOR_LIST_SIZE] = {0.2,0.27,0.4,0.6};
-
+//double range_bias[MAX_ANCHOR_LIST_SIZE] = {0.3688,0.2474,0.3852,0};
+//double range_bias2[MAX_ANCHOR_LIST_SIZE] = {0.4063,0.2348,0.4471,0.39};
+double range_bias[MAX_ANCHOR_LIST_SIZE] = {0,0,0,0};
+double range_bias2[MAX_ANCHOR_LIST_SIZE] = {0,0,0,0};
 Coordinates coordinates[MAX_ANCHOR_LIST_SIZE]={
 
 		// ISMB -> Local {X,Y,Z} coordinates
 		//{23.71,6.33,2.3} // Anchor0 first position    
 		{16.72,0,2.3},		//Anchor0
 		//{23.68, 9.03, 2.3}, // Anchor0 corner
-		{12.39,4.55,2.3},   //Anchor1
+		{12.34,8.96,2.3},   //Anchor1
 		//{12.41, 9.01, 2.3} //Anchor1 corner
-		{17.97,8.85,1.4},    //Anchor2
+		{23.71,7.81,2.3},    //Anchor2
 		{0,0,0}     //Anchor3
 };
 
@@ -136,7 +138,7 @@ void initSystem(PV_EKF *PVSys,LocData *info, vecPV_EKF * vecPVSys, localization_
 			 {
 				 if (uwb->Range[i] != 0)
 				 {
-					 info->Range[info->Nummeasurements] = uwb->Range[i] - range_bias[info->Nummeasurements];
+					 info->Range[info->Nummeasurements] = uwb->Range[i] - range_bias[info->Nummeasurements] - range_bias2[info->Nummeasurements];
 					 info->AnchorPos[info->Nummeasurements] = i;
 					 info->Nummeasurements++; // Count the number of measurements
 				  }
@@ -229,7 +231,7 @@ void Locthread(void const *argument)
 	  	{
 		  if (uwb->Range[i] != 0)
 		  {
-			  info.Range[info.Nummeasurements] = uwb->Range[i] - range_bias[info.Nummeasurements]; // Correct bias
+			  info.Range[info.Nummeasurements] = uwb->Range[i] - range_bias[info.Nummeasurements] -range_bias2[info.Nummeasurements]; // Correct bias
 			  info.AnchorPos[info.Nummeasurements] = i;
 			  info.Nummeasurements++; // Count the number of measurements
 		  }

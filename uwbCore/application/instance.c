@@ -660,6 +660,7 @@ int testapprun(instance_data_t *inst, int message)
                         }
 
                         inst->msg_f.messageData[FLAG_NEG] = flag_neg;
+                        inst->msg_f.messageData[TAGNUM] = inst->firstAddrTag&0X3;
                         memcpy(&(inst->msg_f.messageData[XLOC_POS]), &tagPosx, 4);
                         memcpy(&(inst->msg_f.messageData[YLOC_POS]), &tagPosy, 4);
 
@@ -706,12 +707,12 @@ int testapprun(instance_data_t *inst, int message)
                         }
                         else
                         {
-
+                            sprintf((char*)&dataseq[0], "%d %2d %3.2f %3.2f %2d %3.2f %3.2f %3.2f, %3.2f %1d", portGetTickCount(),(inst->firstAddrTag&0X3), 
+                                loc->estPos[0], loc->estPos[1], inst->rxReportMaskReport, inst_idist[0], inst_idist[1], inst_idist[2], inst_idist[3],
+                                inst->validLoc);
+                            uartWriteLineNoOS((char *) dataseq); //send some data
                             inst->testAppState = TA_TX_WAIT_CONF;                                               // wait confirmation
                             inst->previousState = TA_TXLOC_WAIT_SEND;
-                            sprintf((char*)&dataseq[0], "TX: %3.2f m TY:%3.2f m, %x ", loc->estPos[0], loc->estPos[1], inst->rxReportMaskReport);
-
-                            uartWriteLineNoOS((char *) dataseq); //send some data
 
                         }
                         
@@ -1303,8 +1304,6 @@ int testapprun(instance_data_t *inst, int message)
                                             uint32 tagPosy = 0;
                                             uint8 flag_neg;
                                             
-                                            sprintf((char*)&dataseq[0], "RX: %3.2f m RY:%3.2f m ", inst->anch_pos_estimation[0], inst->anch_pos_estimation[1]);
-                                            uartWriteLineNoOS((char *) dataseq); //send some data
 
                                             //uint32 tagPosz = 0;
                                             if(inst->rangeNumA[srcAddr[0]&0x7] != messageData[LOC_RNUM]){
