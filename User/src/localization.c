@@ -17,7 +17,7 @@
 
 //double range_bias[MAX_ANCHOR_LIST_SIZE] = {0.3688,0.2474,0.3852,0};
 //double range_bias2[MAX_ANCHOR_LIST_SIZE] = {0.4063,0.2348,0.4471,0.39};
-double range_bias[MAX_ANCHOR_LIST_SIZE] = {0,0,0,0};
+double range_bias[MAX_ANCHOR_LIST_SIZE] = {0.4215,0.2041,0.4186,0.3320};
 double range_bias2[MAX_ANCHOR_LIST_SIZE] = {0,0,0,0};
 Coordinates coordinates[MAX_ANCHOR_LIST_SIZE]={
 
